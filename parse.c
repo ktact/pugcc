@@ -8,13 +8,23 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
-Node *new_node_num(int val) {
+Node *new_num_node(int val) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_NUM;
     node->val  = val;
     return node;
 }
 
+Node *new_var_node(char name) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_LVAR;
+    node->offset = (name - 'a' + 1) * 8;
+    return node;
+}
+
+Node *stmt();
+Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
@@ -22,12 +32,37 @@ Node *mul();
 Node *unary();
 Node *primary();
 bool consume(char *op);
+Token *consume_ident();
 void expect(char *op);
 int expect_number();
+bool at_eof();
 
-// expr = equality
+// program = stmt*
+void program() {
+    int i = 0;
+    while (!at_eof())
+        code[i++] = stmt();
+    code[i] = NULL; // 最後のノードをNULLで埋めておくと、どこが末尾かわかる
+}
+
+// stmt = expr ";"
+Node *stmt() {
+    Node *node = expr();
+    expect(";");
+    return node;
+}
+
+// expr = assign
 Node *expr() {
-    return equality();
+    return assign();
+}
+
+// assign = equality ("=" assign)?
+Node *assign() {
+    Node *node = equality();
+    if (consume("="))
+        node = new_node(ND_ASSIGN, node, assign());
+    return node;
 }
 
 // equality = relational ("==" relational | "!=" relational)*
@@ -95,11 +130,11 @@ Node *unary() {
     if (consume("+"))
         return unary();
     if (consume("-"))
-        return new_node(ND_SUB, new_node_num(0), unary());
+        return new_node(ND_SUB, new_num_node(0), unary());
     return primary();
 }
 
-// primary = "(" expr ")"
+// primary = num | ident | "(" expr ")"
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -108,8 +143,13 @@ Node *primary() {
         return node;
     }
 
+    Token *tok = consume_ident();
+    if (tok) {
+        return new_var_node(tok->str[0]);
+    }
+
     // そうでなければ数値のはず
-    return new_node_num(expect_number());
+    return new_num_node(expect_number());
 }
 
 // 新しいトークンを作成してcurに繋げる
@@ -156,6 +196,16 @@ bool consume(char *op) {
     return true;
 }
 
+// 次のトークンが識別子であればトークンを1つ読み進める。
+// それ以外の場合にはNULLを返す。
+Token *consume_ident() {
+    if (token->kind != TK_IDENT)
+        return NULL;
+    Token *t = token;
+    token = token->next;
+    return t;
+}
+
 // 次のトークンが期待している記号の場合にはトークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char *op) {
@@ -197,6 +247,13 @@ Token *tokenize() {
             continue;
         }
 
+        // 変数名は小文字1文字に限定（暫定）
+        if ('a' <= *p && *p <= 'z') {
+            cur = new_token(TK_IDENT, cur, p++, 1);
+            cur->len = 1;
+            continue;
+        }
+
         if (startswith(p, "==") || startswith(p, "!=") ||
             startswith(p, "<=") || startswith(p, ">=")) {
             cur = new_token(TK_RESERVED, cur, p, 2);
@@ -204,7 +261,7 @@ Token *tokenize() {
             continue;
         }
 
-        if (strchr("+-*/()<>", *p)) {
+        if (strchr("+-*/()<>=;", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
@@ -217,7 +274,7 @@ Token *tokenize() {
             continue;
         }
 
-        error_at(p, "数ではありません");
+        error_at(p, "不正なトークンです");
     }
 
     new_token(TK_EOF, cur, p, 0);
