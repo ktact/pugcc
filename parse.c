@@ -8,6 +8,13 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
+Node *new_unary(NodeKind kind, Node *expr) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = kind;
+    node->lhs = expr;
+    return node;
+}
+
 Node *new_num_node(int val) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_NUM;
@@ -47,8 +54,14 @@ void program() {
     code[i] = NULL; // 最後のノードをNULLで埋めておくと、どこが末尾かわかる
 }
 
-// stmt = expr ";"
+// stmt = "return" expr ";" | expr ";"
 Node *stmt() {
+    if (consume("return")) {
+        Node *node = new_unary(ND_RETURN, expr());
+        expect(";");
+        return node;
+    }
+
     Node *node = expr();
     expect(";");
     return node;
@@ -232,7 +245,7 @@ Token *consume_ident() {
 void expect(char *op) {
     if (token->kind != TK_RESERVED || strlen(op) != token->len ||
         memcmp(token->str, op, token->len))
-        error_at(token->str, "'%c'ではありません", op);
+        error_at(token->str, "'%s'ではありません", op);
     token = token->next;
 }
 
@@ -273,6 +286,13 @@ Token *tokenize() {
         // 空白文字をスキップ
         if (isspace(*p)) {
             p++;
+            continue;
+        }
+
+        // 予約語"return"
+        if (startswith(p, "return") && !is_alnum(p[6])) {
+            cur = new_token(TK_RESERVED, cur, p, 6);
+            p += 6;
             continue;
         }
 
