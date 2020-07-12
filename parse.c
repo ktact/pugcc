@@ -15,11 +15,12 @@ Node *new_num_node(int val) {
     return node;
 }
 
-Node *new_var_node(char name) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
-    node->offset = (name - 'a' + 1) * 8;
-    return node;
+// 変数を名前で検索する。見つからなかった場合はNULLを返す。
+LVar *find_lvar(Token *tok) {
+    for (LVar *var = locals; var; var = var->next)
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+            return var;
+    return NULL;
 }
 
 Node *stmt();
@@ -39,6 +40,7 @@ bool at_eof();
 
 // program = stmt*
 void program() {
+    locals = NULL;
     int i = 0;
     while (!at_eof())
         code[i++] = stmt();
@@ -145,7 +147,26 @@ Node *primary() {
 
     Token *tok = consume_ident();
     if (tok) {
-        return new_var_node(tok->str[0]);
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_LVAR;
+
+        LVar *lvar = find_lvar(tok);
+        if (lvar) {
+            node->offset = lvar->offset;
+        } else {
+            lvar = calloc(1, sizeof(LVar));
+            lvar->next = locals;
+            lvar->name = tok->str;
+            lvar->len  = tok->len;
+            if (locals) {
+                lvar->offset = locals->offset + 8;
+            } else {
+                lvar->offset = 8;
+            }
+            node->offset = lvar->offset;
+            locals = lvar;
+        }
+        return node;
     }
 
     // そうでなければ数値のはず
@@ -233,6 +254,14 @@ bool startswith(char *p, char *q) {
     return memcmp(p, q, strlen(q)) == 0;
 }
 
+static bool is_alpha(char c) {
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
+static bool is_alnum(char c) {
+    return is_alpha(c) || ('0' <= c && c <= '9');
+}
+
 // 入力文字列pをトークナイズしてそれを返す
 Token *tokenize() {
     char *p = user_input;
@@ -247,10 +276,12 @@ Token *tokenize() {
             continue;
         }
 
-        // 変数名は小文字1文字に限定（暫定）
-        if ('a' <= *p && *p <= 'z') {
-            cur = new_token(TK_IDENT, cur, p++, 1);
-            cur->len = 1;
+        // 識別子
+        if (is_alpha(*p)) {
+            char *q = p++;
+            while (is_alnum(*p))
+                p++;
+            cur = new_token(TK_IDENT, cur, q, p - q);
             continue;
         }
 

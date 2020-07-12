@@ -51,6 +51,19 @@ struct Node {
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_LVARの場合のみ使う
 };
 
+typedef struct LVar LVar;
+
+// ローカル変数を表す型
+struct LVar {
+    LVar *next; // 次の変数かNULL
+    char *name; // 変数の名前
+    int len;    // 変数名の文字列長
+    int offset; // RBPからのオフセット
+};
+
+// ローカル変数情報
+LVar *locals;
+
 // 入力プログラム
 char *user_input;
 
