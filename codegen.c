@@ -1,5 +1,8 @@
 #include "pugcc.h"
 
+// ラベルの通し番号
+static int label_seq_num = 0;
+
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR)
         error("代入の左辺値が変数ではありません");
@@ -30,6 +33,28 @@ void gen(Node *node) {
         printf("  mov [rax], rdi\n");
         printf("  push rdi\n");
         return;
+    case ND_IF: {
+        int seq_num = label_seq_num++;
+        if (node->els) {
+            gen(node->cond);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  je  .L.else.%d\n", seq_num);
+            gen(node->then);
+            printf("  jmp .L.end.%d\n", seq_num);
+            printf(".L.else.%d:\n", seq_num);
+            gen(node->els);
+            printf(".L.end.%d:\n", seq_num);
+        } else {
+            gen(node->cond);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  je.L.end.%d:\n", seq_num);
+            gen(node->then);
+            printf(".L.end.%d:\n", seq_num);
+        }
+        return;
+    }
     case ND_RETURN:
         gen(node->lhs);
         printf("  pop rax\n");

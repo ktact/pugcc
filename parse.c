@@ -1,23 +1,26 @@
 #include "pugcc.h"
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
+    return node;
+}
+
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
+    Node *node = new_node(kind);
     node->lhs  = lhs;
     node->rhs  = rhs;
     return node;
 }
 
 Node *new_unary(NodeKind kind, Node *expr) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = kind;
+    Node *node = new_node(kind);
     node->lhs = expr;
     return node;
 }
 
 Node *new_num_node(int val) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_NUM;
+    Node *node = new_node(ND_NUM);
     node->val  = val;
     return node;
 }
@@ -54,11 +57,24 @@ void program() {
     code[i] = NULL; // 最後のノードをNULLで埋めておくと、どこが末尾かわかる
 }
 
-// stmt = "return" expr ";" | expr ";"
+// stmt = "return" expr ";"
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | expr ";"
 Node *stmt() {
     if (consume("return")) {
         Node *node = new_unary(ND_RETURN, expr());
         expect(";");
+        return node;
+    }
+
+    if (consume("if")) {
+        Node *node = new_node(ND_IF);
+        expect("(");
+        node->cond = expr();
+        expect(")");
+        node->then = stmt();
+        if (consume("else"))
+            node->els = stmt();
         return node;
     }
 
@@ -76,7 +92,7 @@ Node *expr() {
 Node *assign() {
     Node *node = equality();
     if (consume("="))
-        node = new_node(ND_ASSIGN, node, assign());
+        node = new_binary(ND_ASSIGN, node, assign());
     return node;
 }
 
@@ -86,9 +102,9 @@ Node *equality() {
 
     for (;;) {
         if (consume("=="))
-            node = new_node(ND_EQ, node, relational());
+            node = new_binary(ND_EQ, node, relational());
         else if (consume("!="))
-            node = new_node(ND_NE, node, relational());
+            node = new_binary(ND_NE, node, relational());
         else
             return node;
     }
@@ -100,13 +116,13 @@ Node *relational() {
 
     for (;;) {
         if (consume("<"))
-            node = new_node(ND_LT, node, add());
+            node = new_binary(ND_LT, node, add());
         else if (consume("<="))
-            node = new_node(ND_LE, node, add());
+            node = new_binary(ND_LE, node, add());
         else if (consume(">"))
-            node = new_node(ND_LT, add(), node);
+            node = new_binary(ND_LT, add(), node);
         else if (consume(">="))
-            node = new_node(ND_LE, add(), node);
+            node = new_binary(ND_LE, add(), node);
         else
             return node;
     }
@@ -118,9 +134,9 @@ Node *add() {
 
     for (;;) {
         if (consume("+"))
-            node = new_node(ND_ADD, node, mul());
+            node = new_binary(ND_ADD, node, mul());
         else if (consume("-"))
-            node = new_node(ND_SUB, node, mul());
+            node = new_binary(ND_SUB, node, mul());
         else
             return node;
     }
@@ -132,9 +148,9 @@ Node *mul() {
 
     for (;;) {
         if (consume("*"))
-            node = new_node(ND_MUL, node, unary());
+            node = new_binary(ND_MUL, node, unary());
         else if (consume("/"))
-            node = new_node(ND_DIV, node, unary());
+            node = new_binary(ND_DIV, node, unary());
         else
             return node;
     }
@@ -145,7 +161,7 @@ Node *unary() {
     if (consume("+"))
         return unary();
     if (consume("-"))
-        return new_node(ND_SUB, new_num_node(0), unary());
+        return new_binary(ND_SUB, new_num_node(0), unary());
     return primary();
 }
 
@@ -286,6 +302,20 @@ Token *tokenize() {
         // 空白文字をスキップ
         if (isspace(*p)) {
             p++;
+            continue;
+        }
+
+        // 予約語"if"
+        if (startswith(p, "if") && !is_alnum(p[2])) {
+            cur = new_token(TK_RESERVED, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        // 予約語"else"
+        if (startswith(p, "else") && !is_alnum(p[4])) {
+            cur = new_token(TK_RESERVED, cur, p, 4);
+            p += 4;
             continue;
         }
 

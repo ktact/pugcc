@@ -38,6 +38,7 @@ typedef enum {
     ND_LT,     // <
     ND_LE,     // <=
     ND_NUM,    // Integer
+    ND_IF,     // if
     ND_RETURN, // return
 } NodeKind;
 
@@ -48,6 +49,9 @@ struct Node {
     NodeKind kind; // ノードの型
     Node *lhs;     // 左辺(light-hand side)
     Node *rhs;     // 右辺(right-hand side)
+    Node *cond;    // if文の条件式
+    Node *then;    // if文が真の場合に実行される式
+    Node *els;     // if文が偽の場合に実行される式
     int val;       // kindがND_NUMの場合のみ使う
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_LVARの場合のみ使う
 };

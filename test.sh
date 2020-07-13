@@ -47,7 +47,12 @@ assert 1 "return 1>=1;"
 assert 0 "return 1>=2;"
 
 assert 3 "foo=3; return foo;"
-assert 8 "foo=3; bar=5; return foo+bar;"
+assert 4 "foo=3; bar=5; return (foo+bar)/2;"
 assert 5 "return 5; return 8;"
+
+assert 3 "if (0) return 2; else return 3;"
+assert 3 "if (1-1) return 2; else return 3;"
+assert 2 "if (1) return 2; return 3;"
+assert 2 "if (2-1) return 2; return 3;"
 
 echo OK
