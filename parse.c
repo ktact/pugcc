@@ -291,6 +291,16 @@ static bool is_alnum(char c) {
     return is_alpha(c) || ('0' <= c && c <= '9');
 }
 
+static int reserved_word(char *p) {
+    char *keywords[] = { "return", "if", "else" };
+    for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
+        int len = strlen(keywords[i]);
+        if (startswith(p, keywords[i]) && !is_alnum(p[len]))
+            return len;
+    }
+    return 0;
+}
+
 // 入力文字列pをトークナイズしてそれを返す
 Token *tokenize() {
     char *p = user_input;
@@ -305,24 +315,10 @@ Token *tokenize() {
             continue;
         }
 
-        // 予約語"if"
-        if (startswith(p, "if") && !is_alnum(p[2])) {
-            cur = new_token(TK_RESERVED, cur, p, 2);
-            p += 2;
-            continue;
-        }
-
-        // 予約語"else"
-        if (startswith(p, "else") && !is_alnum(p[4])) {
-            cur = new_token(TK_RESERVED, cur, p, 4);
-            p += 4;
-            continue;
-        }
-
-        // 予約語"return"
-        if (startswith(p, "return") && !is_alnum(p[6])) {
-            cur = new_token(TK_RESERVED, cur, p, 6);
-            p += 6;
+        int len = 0;
+        if ((len = reserved_word(p)) > 0) {
+            cur = new_token(TK_RESERVED, cur, p, len);
+            p += len;
             continue;
         }
 
