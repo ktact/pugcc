@@ -59,6 +59,7 @@ void program() {
 // stmt = "return" expr ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
+//      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
 Node *stmt() {
     if (consume("return")) {
@@ -83,6 +84,25 @@ Node *stmt() {
         expect("(");
         node->cond = expr();
         expect(")");
+        node->then = stmt();
+        return node;
+    }
+
+    if (consume("for")) {
+        Node *node = new_node(ND_FOR);
+        expect("(");
+        if (!consume(";")) {
+            node->init = expr();
+            expect(";");
+        }
+        if (!consume(";")) {
+            node->cond = expr();
+            expect(";");
+        }
+        if (!consume(")")) {
+            node->inc = expr();
+            expect(")");
+        }
         node->then = stmt();
         return node;
     }
@@ -301,7 +321,7 @@ static bool is_alnum(char c) {
 }
 
 static int reserved_word(char *p) {
-    char *keywords[] = { "return", "if", "else", "while" };
+    char *keywords[] = { "return", "if", "else", "while", "for" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))

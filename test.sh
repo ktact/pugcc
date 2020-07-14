@@ -58,4 +58,9 @@ assert 2 "if (2-1) return 2; return 3;"
 assert 10 "i = 0; while (i < 10) i = i + 1; return i;"
 assert 0  "i = 0; while (0) i = 1; return i;"
 
+assert 9  "ret = 0; for (i = 0; i < 10; i = i + 1) ret = i; return ret;"
+assert 0  "ret = 0; for (i = 0; i > 1;  i = i + 1) ret = i; return ret;"
+assert 10 "ret = 0; for (;ret < 10;) ret = ret + 1; return ret;"
+assert 3  "for (;;) return 3; return 5;"
+
 echo OK
