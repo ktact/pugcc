@@ -41,6 +41,7 @@ typedef enum {
     ND_IF,     // if
     ND_WHILE,  // while
     ND_FOR,    // for
+    ND_BLOCK,  // {...}
     ND_RETURN, // return
 } NodeKind;
 
@@ -56,6 +57,8 @@ struct Node {
     Node *els;     // if,while,for文の条件式が偽の場合に実行される式
     Node *init;
     Node *inc;
+    Node *body;
+    Node *next;
     int val;       // kindがND_NUMの場合のみ使う
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_LVARの場合のみ使う
 };
