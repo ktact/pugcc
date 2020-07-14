@@ -209,7 +209,19 @@ Node *unary() {
     return primary();
 }
 
-// primary = num | ident | "(" expr ")"
+char *strndup(const char *s, size_t n) {
+    char *p = memchr(s, '\0', n);
+    if (p != NULL)
+        n = p - s;
+    p = malloc(n + 1);
+    if (p != NULL) {
+        memcpy(p, s, n);
+        p[n] = '\0';
+    }
+    return p;
+}
+
+// primary = num | ident ("(" ")")? | "(" expr ")"
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -221,6 +233,14 @@ Node *primary() {
     Token *tok = consume_ident();
     if (tok) {
         Node *node = calloc(1, sizeof(Node));
+        // 関数呼び出し
+        if (consume("(")) {
+            node->kind     = ND_FUNCCALL;
+            node->funcname = strndup(tok->str, tok->len);
+            expect(")");
+            return node;
+        }
+        // 変数
         node->kind = ND_LVAR;
 
         LVar *lvar = find_lvar(tok);

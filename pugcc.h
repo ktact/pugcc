@@ -42,6 +42,7 @@ typedef enum {
     ND_WHILE,  // while
     ND_FOR,    // for
     ND_BLOCK,  // {...}
+    ND_FUNCCALL, // function()
     ND_RETURN, // return
 } NodeKind;
 
@@ -61,6 +62,7 @@ struct Node {
     Node *next;
     int val;       // kindがND_NUMの場合のみ使う
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_LVARの場合のみ使う
+    char *funcname; // kindがND_FUNCCALLの場合のみ使う
 };
 
 typedef struct LVar LVar;

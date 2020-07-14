@@ -1,10 +1,15 @@
 #!/bin/bash
+cat <<EOF | gcc -xc -c -o tmp2.o -
+int ret3() { return 3; }
+int ret5() { return 5; }
+EOF
+
 assert() {
   expected="$1"
   input="$2"
 
   ./pugcc "$input" > tmp.s
-  cc -o tmp tmp.s
+  cc -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
 
@@ -67,4 +72,6 @@ assert 3 "{1;2;return 3;}"
 assert 3 "{1;{2;}return 3;}"
 assert 55 "i=0;j=0;while(i<=10){ j=i+j;i=i+1;}return j;"
 
+assert 3 "return ret3();"
+assert 5 "return ret5();"
 echo OK
