@@ -79,19 +79,26 @@ struct LVar {
 // ローカル変数情報
 LVar *locals;
 
+typedef struct Function Function;
+
+// 関数を表す型
+struct Function {
+    char     *name;
+    Node     *body;
+    Function *next;
+    int stack_size;
+};
+
 // 入力プログラム
 char *user_input;
 
-// パース結果（暫定）
-Node *code[100];
-
 // パース関数の宣言
-void program();
+Function *program();
 
 // トークナイズ関数の宣言
 extern Token *tokenize();
 
 // コード生成関数の宣言
-extern void gen(Node *node);
+extern void codegen(Function *program);
 
 extern void error(char *fmt, ...);

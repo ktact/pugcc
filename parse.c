@@ -32,6 +32,19 @@ LVar *find_lvar(Token *tok) {
     return NULL;
 }
 
+char *strndup(const char *s, size_t n) {
+    char *p = memchr(s, '\0', n);
+    if (p != NULL)
+        n = p - s;
+    p = malloc(n + 1);
+    if (p != NULL) {
+        memcpy(p, s, n);
+        p[n] = '\0';
+    }
+    return p;
+}
+
+Function *funcdef();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -48,13 +61,44 @@ void expect(char *op);
 int expect_number();
 bool at_eof();
 
-// program = stmt*
-void program() {
-    locals = NULL;
-    int i = 0;
-    while (!at_eof())
-        code[i++] = stmt();
-    code[i] = NULL; // 最後のノードをNULLで埋めておくと、どこが末尾かわかる
+// program = funcdef*
+Function *program() {
+    Function head = {};
+    Function *cur = &head;
+
+    while(!at_eof()) {
+        cur->next = funcdef();
+        cur = cur->next;
+    }
+
+    return head.next;
+}
+
+// funcdef = ident "(" ")" "{" stmt* "}"
+Function *funcdef() {
+    Token *tok = consume_ident();
+    if (tok) {
+        Function *f = calloc(1, sizeof(Function));
+        f->name = strndup(tok->str, tok->len);
+
+        expect("(");
+        expect(")");
+        expect("{");
+
+        Node head = {};
+        Node *cur = &head;
+
+        while (!consume("}")) {
+            cur->next = stmt();
+            cur = cur->next;
+        }
+
+        f->body = head.next;
+
+        return f;
+    }
+
+    return NULL;
 }
 
 // stmt = "return" expr ";"
@@ -210,17 +254,7 @@ Node *unary() {
     return primary();
 }
 
-char *strndup(const char *s, size_t n) {
-    char *p = memchr(s, '\0', n);
-    if (p != NULL)
-        n = p - s;
-    p = malloc(n + 1);
-    if (p != NULL) {
-        memcpy(p, s, n);
-        p[n] = '\0';
-    }
-    return p;
-}
+
 
 // primary = num | ident funcargs? | "(" expr ")"
 Node *primary() {

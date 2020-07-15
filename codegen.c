@@ -14,8 +14,7 @@ void gen_lval(Node *node) {
     printf("  push rax\n");
 }
 
-// コード生成
-void gen(Node *node) {
+static void gen(Node *node) {
     switch (node->kind) {
     case ND_NUM:
         printf("  push %d\n", node->val);
@@ -158,3 +157,27 @@ void gen(Node *node) {
 
     printf("  push rax\n");
 }
+
+// コード生成
+void codegen(Function *program) {
+    printf(".intel_syntax noprefix\n");
+    for (Function *f = program; f; f = f->next) {
+        printf(".global %s\n", f->name);
+        printf("%s:\n", f->name);
+
+        // プロローグ
+        printf("  push rbp\n");
+        printf("  mov rbp, rsp\n");
+        printf("  sub rsp, %d\n", f->stack_size);
+
+        for (Node *stmt = f->body; stmt; stmt = stmt->next)
+            gen(stmt);
+
+        // エピローグ
+        printf("mov rsp, rbp\n");
+        printf("pop rbp\n");
+        printf("ret\n");
+    }
+}
+
+
