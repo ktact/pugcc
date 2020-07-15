@@ -101,4 +101,5 @@ extern Token *tokenize();
 // コード生成関数の宣言
 extern void codegen(Function *program);
 
+extern char *strndup(const char *s, size_t n);
 extern void error(char *fmt, ...);

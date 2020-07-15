@@ -32,18 +32,6 @@ LVar *find_lvar(Token *tok) {
     return NULL;
 }
 
-char *strndup(const char *s, size_t n) {
-    char *p = memchr(s, '\0', n);
-    if (p != NULL)
-        n = p - s;
-    p = malloc(n + 1);
-    if (p != NULL) {
-        memcpy(p, s, n);
-        p[n] = '\0';
-    }
-    return p;
-}
-
 Function *funcdef();
 Node *stmt();
 Node *expr();
