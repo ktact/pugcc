@@ -2,6 +2,8 @@
 
 // ラベルの通し番号
 static int label_seq_num = 0;
+// 関数呼び出しの引数を積むレジスタ
+static char *arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR)
@@ -90,10 +92,19 @@ void gen(Node *node) {
         for (Node *n = node->body; n; n = n->next)
             gen(n);
         return;
-    case ND_FUNCCALL:
+    case ND_FUNCCALL: {
+        int number_of_args = 0;
+        for (Node *arg = node->args; arg; arg = arg->next) {
+            gen(arg);
+            number_of_args++;
+        }
+        for (int i = number_of_args-1; i >= 0; i--) {
+            printf("  pop %s\n", arg_regs[i]);
+        }
         printf("  call %s\n", node->funcname);
         printf("  push rax\n");
         return;
+    }
     case ND_RETURN:
         gen(node->lhs);
         printf("  pop rax\n");

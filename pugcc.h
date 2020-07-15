@@ -59,6 +59,7 @@ struct Node {
     Node *init;
     Node *inc;
     Node *body;
+    Node *args;
     Node *next;
     int val;       // kindがND_NUMの場合のみ使う
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_LVARの場合のみ使う

@@ -41,6 +41,7 @@ Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
+Node *funcargs();
 bool consume(char *op);
 Token *consume_ident();
 void expect(char *op);
@@ -221,7 +222,7 @@ char *strndup(const char *s, size_t n) {
     return p;
 }
 
-// primary = num | ident ("(" ")")? | "(" expr ")"
+// primary = num | ident funcargs? | "(" expr ")"
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -237,7 +238,7 @@ Node *primary() {
         if (consume("(")) {
             node->kind     = ND_FUNCCALL;
             node->funcname = strndup(tok->str, tok->len);
-            expect(")");
+            node->args     = funcargs();
             return node;
         }
         // 変数
@@ -264,6 +265,22 @@ Node *primary() {
 
     // そうでなければ数値のはず
     return new_num_node(expect_number());
+}
+
+// funcargs = "(" (assign ("," assign)*)? ")"
+Node *funcargs() {
+    if (consume(")"))
+        return NULL;
+
+    Node *head = assign();
+    Node *cur  = head;
+    while (consume(",")) {
+        cur->next = assign();
+        cur = cur->next;
+    }
+    expect(")");
+
+    return head;
 }
 
 // 新しいトークンを作成してcurに繋げる
@@ -402,7 +419,7 @@ Token *tokenize() {
             continue;
         }
 
-        if (strchr("+-*/(){}<>=;", *p)) {
+        if (strchr("+-*/(){}<>=;,", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
