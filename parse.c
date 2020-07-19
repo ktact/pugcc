@@ -24,6 +24,14 @@ Node *new_num_node(int val) {
     return node;
 }
 
+static LVar *new_local_var(Token *token) {
+    LVar *var = calloc(1, sizeof(LVar));
+    var->next = locals;
+    var->name = token->str;
+    var->len  = token->len;
+    return var;
+}
+
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 LVar *find_lvar(Token *tok) {
     for (LVar *var = locals; var; var = var->next)
@@ -47,6 +55,7 @@ bool consume(char *op);
 Token *consume_ident();
 void expect(char *op);
 int expect_number();
+Token *expect_ident();
 bool at_eof();
 
 // program = funcdef*
@@ -62,6 +71,23 @@ Function *program() {
     return head.next;
 }
 
+static LVar *read_func_params() {
+    if (consume(")"))
+        return NULL;
+
+    LVar *head = new_local_var(expect_ident());
+    head->offset = 8;
+    LVar *cur  = head;
+    while (consume(",")) {
+        cur->next = new_local_var(expect_ident());
+        cur->next->offset = cur->offset + 8;
+        cur = cur->next;
+    }
+    expect(")");
+
+    return head;
+}
+
 // funcdef = ident "(" ")" "{" stmt* "}"
 Function *funcdef() {
     Token *tok = consume_ident();
@@ -70,7 +96,10 @@ Function *funcdef() {
         f->name = strndup(tok->str, tok->len);
 
         expect("(");
-        expect(")");
+        f->params = read_func_params();
+        for (LVar *param = f->params; param; param = param->next) {
+            f->stack_size += 8;
+        }
         expect("{");
 
         Node head = {};
@@ -270,10 +299,7 @@ Node *primary() {
         if (lvar) {
             node->offset = lvar->offset;
         } else {
-            lvar = calloc(1, sizeof(LVar));
-            lvar->next = locals;
-            lvar->name = tok->str;
-            lvar->len  = tok->len;
+            lvar = new_local_var(tok);
             if (locals) {
                 lvar->offset = locals->offset + 8;
             } else {
@@ -376,6 +402,16 @@ int expect_number() {
     int val = token->val;
     token = token->next;
     return val;
+}
+
+// 次のトークンが識別子の場合、トークンを1つ読み進めてそのトークンを返す。
+// それ以外の場合にはエラーを報告する。
+Token *expect_ident() {
+    if (token->kind != TK_IDENT)
+        error_at(token->str, "識別子ではありません");
+    Token *t = token;
+    token = token->next;
+    return t;
 }
 
 bool at_eof() {

@@ -7,7 +7,6 @@ int main(int argc, char **argv) {
     }
 
     // トークナイズしてパースする
-    // 結果はcodeに保存される
     user_input = argv[1];
     token = tokenize();
     Function *prog = program();
