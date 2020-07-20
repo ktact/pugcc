@@ -43,6 +43,8 @@ typedef enum {
     ND_FOR,    // for
     ND_BLOCK,  // {...}
     ND_FUNCCALL, // function()
+    ND_ADDR,   // &x
+    ND_DEREF,  // *x
     ND_RETURN, // return
 } NodeKind;
 

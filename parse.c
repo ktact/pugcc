@@ -94,12 +94,10 @@ Function *funcdef() {
     if (tok) {
         Function *f = calloc(1, sizeof(Function));
         f->name = strndup(tok->str, tok->len);
+        locals = NULL;
 
         expect("(");
         f->params = read_func_params();
-        for (LVar *param = f->params; param; param = param->next) {
-            f->stack_size += 8;
-        }
         expect("{");
 
         Node head = {};
@@ -112,6 +110,12 @@ Function *funcdef() {
 
         f->body = head.next;
 
+        for (LVar *lvar = locals; lvar; lvar = lvar->next)
+            f->stack_size += 8;
+
+        for (LVar *param = f->params; param; param = param->next)
+            f->stack_size += 8;
+ 
         return f;
     }
 
@@ -262,12 +266,16 @@ Node *mul() {
     }
 }
 
-// unary = ("+" | "-")? unary | parimary
+// unary = ("+" | "-" | "*" | "&")? unary | primary
 Node *unary() {
     if (consume("+"))
         return unary();
     if (consume("-"))
         return new_binary(ND_SUB, new_num_node(0), unary());
+    if (consume("*"))
+        return new_unary(ND_DEREF, unary());
+    if (consume("&"))
+        return new_unary(ND_ADDR, unary());
     return primary();
 }
 
@@ -477,7 +485,7 @@ Token *tokenize() {
             continue;
         }
 
-        if (strchr("+-*/(){}<>=;,", *p)) {
+        if (strchr("+-*/&(){}<>=;,", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
