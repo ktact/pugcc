@@ -46,6 +46,7 @@ typedef enum {
     ND_ADDR,   // &x
     ND_DEREF,  // *x
     ND_RETURN, // return
+    ND_NOP,    // Empty statement
 } NodeKind;
 
 typedef struct Node Node;

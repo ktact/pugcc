@@ -120,6 +120,8 @@ static void gen(Node *node) {
         printf("  pop rbp\n");
         printf("  ret\n");
         return;
+    case ND_NOP:
+        return;
     }
 
     gen(node->lhs);

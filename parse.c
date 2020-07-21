@@ -25,11 +25,21 @@ Node *new_num_node(int val) {
 }
 
 static LVar *new_local_var(Token *token) {
-    LVar *var = calloc(1, sizeof(LVar));
-    var->next = locals;
-    var->name = token->str;
-    var->len  = token->len;
-    return var;
+    LVar *local_var = calloc(1, sizeof(LVar));
+    local_var->name = token->str;
+    local_var->len  = token->len;
+    if (locals) {
+        LVar *last_var = locals;
+        while (last_var->next)
+            last_var = last_var->next;
+
+        local_var->offset = last_var->offset + 8;
+        last_var->next = local_var;
+    } else {
+        locals = local_var;
+        local_var->offset = 8;
+    }
+    return local_var;
 }
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
@@ -57,7 +67,7 @@ void expect(char *op);
 int expect_number();
 Token *expect_ident();
 bool at_eof();
-
+void error_at(char *loc, char *fmt, ...);
 // program = funcdef*
 Function *program() {
     Function head = {};
@@ -75,12 +85,14 @@ static LVar *read_func_params() {
     if (consume(")"))
         return NULL;
 
+    expect("int");
+
     LVar *head = new_local_var(expect_ident());
-    head->offset = 8;
     LVar *cur  = head;
     while (consume(",")) {
+        expect("int");
+
         cur->next = new_local_var(expect_ident());
-        cur->next->offset = cur->offset + 8;
         cur = cur->next;
     }
     expect(")");
@@ -88,8 +100,10 @@ static LVar *read_func_params() {
     return head;
 }
 
-// funcdef = ident "(" ")" "{" stmt* "}"
+// funcdef = "int" ident "(" params? ")" "{" stmt* "}"
 Function *funcdef() {
+    expect("int");
+
     Token *tok = consume_ident();
     if (tok) {
         Function *f = calloc(1, sizeof(Function));
@@ -110,10 +124,8 @@ Function *funcdef() {
 
         f->body = head.next;
 
-        for (LVar *lvar = locals; lvar; lvar = lvar->next)
-            f->stack_size += 8;
-
-        for (LVar *param = f->params; param; param = param->next)
+        // 関数のスタックサイズ=(関数の引数の個数+関数内のローカル変数の個数)*8
+        for (LVar *var = locals; var; var = var->next)
             f->stack_size += 8;
  
         return f;
@@ -127,6 +139,7 @@ Function *funcdef() {
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | "{" stmt* "}"
+//      | "int" ident ";"
 //      | expr ";"
 Node *stmt() {
     if (consume("return")) {
@@ -188,6 +201,12 @@ Node *stmt() {
         return node;
     }
 
+    if (consume("int")) {
+        Token *tok = expect_ident();
+        LVar *var = new_local_var(tok);
+        expect(";");
+        return new_node(ND_NOP);
+    }
     Node *node = expr();
     expect(";");
     return node;
@@ -307,14 +326,7 @@ Node *primary() {
         if (lvar) {
             node->offset = lvar->offset;
         } else {
-            lvar = new_local_var(tok);
-            if (locals) {
-                lvar->offset = locals->offset + 8;
-            } else {
-                lvar->offset = 8;
-            }
-            node->offset = lvar->offset;
-            locals = lvar;
+            error_at(tok->str, "未定義の変数を参照しています");
         }
         return node;
     }
@@ -439,7 +451,7 @@ static bool is_alnum(char c) {
 }
 
 static int reserved_word(char *p) {
-    char *keywords[] = { "return", "if", "else", "while", "for" };
+    char *keywords[] = { "return", "if", "else", "while", "for", "int" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))
