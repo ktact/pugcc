@@ -82,11 +82,11 @@ extern Type *int_type;
 // Xのポインタ型を得る関数の宣言
 extern Type *pointer_to(Type *base_type);
 
-typedef struct LVar LVar;
+typedef struct Var Var;
 
 // ローカル変数を表す型
-struct LVar {
-    LVar *next; // 次の変数かNULL
+struct Var {
+    Var *next;  // 次の変数かNULL
     char *name; // 変数の名前
     int len;    // 変数名の文字列長
     Type type;  // 変数の型
@@ -94,7 +94,7 @@ struct LVar {
 };
 
 // ローカル変数情報
-LVar *locals;
+Var *locals;
 
 typedef struct Function Function;
 
@@ -102,7 +102,7 @@ typedef struct Function Function;
 struct Function {
     char     *name;
     Node     *body;
-    LVar     *params;
+    Var      *params;
     Function *next;
     int stack_size;
 };

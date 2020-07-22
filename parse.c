@@ -24,12 +24,12 @@ Node *new_num_node(int val) {
     return node;
 }
 
-static LVar *new_local_var(Token *token, Type *type) {
-    LVar *local_var = calloc(1, sizeof(LVar));
+static Var *new_local_var(Token *token, Type *type) {
+    Var *local_var = calloc(1, sizeof(Var));
     local_var->name = token->str;
     local_var->len  = token->len;
     if (locals) {
-        LVar *last_var = locals;
+        Var *last_var = locals;
         while (last_var->next)
             last_var = last_var->next;
 
@@ -43,8 +43,8 @@ static LVar *new_local_var(Token *token, Type *type) {
 }
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
-LVar *find_lvar(Token *tok) {
-    for (LVar *var = locals; var; var = var->next)
+Var *find_lvar(Token *tok) {
+    for (Var *var = locals; var; var = var->next)
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
             return var;
     return NULL;
@@ -89,14 +89,14 @@ static Type *var_type() {
     return type;
 }
 
-static LVar *read_func_params() {
+static Var *read_func_params() {
     if (consume(")"))
         return NULL;
 
     Type *type = var_type();
 
-    LVar *head = new_local_var(expect_ident(), type);
-    LVar *cur  = head;
+    Var *head = new_local_var(expect_ident(), type);
+    Var *cur  = head;
     while (consume(",")) {
         type = var_type();
 
@@ -133,7 +133,7 @@ Function *funcdef() {
         f->body = head.next;
 
         // 関数のスタックサイズ=(関数の引数の個数+関数内のローカル変数の個数)*8
-        for (LVar *var = locals; var; var = var->next)
+        for (Var *var = locals; var; var = var->next)
             f->stack_size += 8;
  
         return f;
@@ -215,7 +215,7 @@ Node *stmt() {
             type = pointer_to(type);
 
         Token *tok = expect_ident();
-        LVar *var = new_local_var(tok, type);
+        Var *var = new_local_var(tok, type);
         expect(";");
         return new_node(ND_NOP);
     }
@@ -334,7 +334,7 @@ Node *primary() {
         // 変数
         node->kind = ND_LVAR;
 
-        LVar *lvar = find_lvar(tok);
+        Var *lvar = find_lvar(tok);
         if (lvar) {
             node->offset = lvar->offset;
         } else {

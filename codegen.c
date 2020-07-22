@@ -190,7 +190,7 @@ void codegen(Function *program) {
         printf("  sub rsp, %d\n", f->stack_size);
 
         int i = 0;
-        for (LVar *param = f->params; param; param = param->next)
+        for (Var *param = f->params; param; param = param->next)
             printf("  mov [rbp-%d], %s\n", param->offset, arg_regs[i++]);
 
         for (Node *stmt = f->body; stmt; stmt = stmt->next)
