@@ -5,13 +5,21 @@ static int label_seq_num = 0;
 // 関数呼び出しの引数を積むレジスタ
 static char *arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 
+static void gen(Node *node);
+
 void gen_lval(Node *node) {
-    if (node->kind != ND_LVAR)
+    if (node->kind != ND_LVAR && node->kind != ND_DEREF)
         error("代入の左辺値が変数ではありません");
 
-    printf("  mov rax, rbp\n");
-    printf("  sub rax, %d\n", node->offset);
-    printf("  push rax\n");
+    if (node->kind == ND_DEREF) {
+        // アドレスを計算しスタックに積む
+        gen(node->lhs);
+    } else {
+        // 左辺値のアドレスをスタックに積む
+        printf("  mov rax, rbp\n");
+        printf("  sub rax, %d\n", node->offset);
+        printf("  push rax\n");
+    }
 }
 
 static void gen(Node *node) {

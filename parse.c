@@ -24,7 +24,7 @@ Node *new_num_node(int val) {
     return node;
 }
 
-static LVar *new_local_var(Token *token) {
+static LVar *new_local_var(Token *token, Type *type) {
     LVar *local_var = calloc(1, sizeof(LVar));
     local_var->name = token->str;
     local_var->len  = token->len;
@@ -81,18 +81,26 @@ Function *program() {
     return head.next;
 }
 
+static Type *var_type() {
+    expect("int");
+    Type *type = int_type;
+    while (consume("*"))
+        type = pointer_to(type);
+    return type;
+}
+
 static LVar *read_func_params() {
     if (consume(")"))
         return NULL;
 
-    expect("int");
+    Type *type = var_type();
 
-    LVar *head = new_local_var(expect_ident());
+    LVar *head = new_local_var(expect_ident(), type);
     LVar *cur  = head;
     while (consume(",")) {
-        expect("int");
+        type = var_type();
 
-        cur->next = new_local_var(expect_ident());
+        cur->next = new_local_var(expect_ident(), type);
         cur = cur->next;
     }
     expect(")");
@@ -202,8 +210,12 @@ Node *stmt() {
     }
 
     if (consume("int")) {
+        Type *type = int_type;
+        while (consume("*"))
+            type = pointer_to(type);
+
         Token *tok = expect_ident();
-        LVar *var = new_local_var(tok);
+        LVar *var = new_local_var(tok, type);
         expect(";");
         return new_node(ND_NOP);
     }

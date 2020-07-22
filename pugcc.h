@@ -69,6 +69,19 @@ struct Node {
     char *funcname; // kindがND_FUNCCALLの場合のみ使う
 };
 
+typedef struct Type Type;
+
+// 型を表す型
+struct Type {
+    enum { INT, PTR } type;
+    struct Type *pointer_to;
+};
+
+// int型の宣言
+extern Type *int_type;
+// Xのポインタ型を得る関数の宣言
+extern Type *pointer_to(Type *base_type);
+
 typedef struct LVar LVar;
 
 // ローカル変数を表す型
@@ -76,6 +89,7 @@ struct LVar {
     LVar *next; // 次の変数かNULL
     char *name; // 変数の名前
     int len;    // 変数名の文字列長
+    Type type;  // 変数の型
     int offset; // RBPからのオフセット
 };
 

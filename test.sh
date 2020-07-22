@@ -95,4 +95,6 @@ assert  5 "int main() { int x; x=3; int y; y=5; return *(&x-8); }"
 assert  3 "int main() { int x; x=3; int y; y=5; return *(&y+8); }"
 assert  3 "int main() { int x; x=3; int y; y=5; int z; z=&y+8; return *z; }"
 
+assert  3 "int main() { int x; int *y; y=&x; *y=3; return x; }"
+
 echo OK
