@@ -145,6 +145,21 @@ static void gen(Node *node) {
     case ND_SUB:
         printf("  sub rax, rdi\n");
         break;
+    case ND_PTR_ADD:
+        printf("  imul rdi, 4\n");
+        printf("  add rax, rdi\n");
+        break;
+    case ND_PTR_SUB:
+        printf("  imul rdi, 4\n");
+        printf("  sub rax, rdi\n");
+        break;
+    case ND_PTR_DIFF:
+        // アドレスの値を引いた後にそのポインタが指す変数の型のバイト数で割る
+        printf("  sub rax, rdi\n");
+        printf("  cqo\n");
+        printf("  mov rdi, 4\n"); // 暫定
+        printf("  idiv rdi\n");
+        break;
     case ND_MUL:
         printf("  imul rax, rdi\n");
         break;

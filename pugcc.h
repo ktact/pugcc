@@ -25,28 +25,44 @@ struct Token {
 // 現在着目しているトークン
 Token *token;
 
+typedef struct Type Type;
+
+// 型を表す型
+struct Type {
+    enum { INT, PTR } type;
+    struct Type *pointer_to;
+};
+
+// int型の宣言
+extern Type *int_type;
+// Xのポインタ型を得る関数の宣言
+extern Type *pointer_to(Type *base_type);
+
 // 抽象構文木のノードの種類
 typedef enum {
-    ND_ADD,    // +
-    ND_SUB,    // -
-    ND_MUL,    // *
-    ND_DIV,    // /
-    ND_ASSIGN, // =
-    ND_LVAR,   // Local Variable
-    ND_EQ,     // ==
-    ND_NE,     // !=
-    ND_LT,     // <
-    ND_LE,     // <=
-    ND_NUM,    // Integer
-    ND_IF,     // if
-    ND_WHILE,  // while
-    ND_FOR,    // for
-    ND_BLOCK,  // {...}
+    ND_ADD,      // num + num
+    ND_SUB,      // num - num
+    ND_PTR_ADD,  // ptr + num | num + ptr
+    ND_PTR_SUB,  // ptr - num | num - ptr
+    ND_PTR_DIFF, // ptr - ptr
+    ND_MUL,      // *
+    ND_DIV,      // /
+    ND_ASSIGN,   // =
+    ND_LVAR,     // Local Variable
+    ND_EQ,       // ==
+    ND_NE,       // !=
+    ND_LT,       // <
+    ND_LE,       // <=
+    ND_NUM,      // Integer
+    ND_IF,       // if
+    ND_WHILE,    // while
+    ND_FOR,      // for
+    ND_BLOCK,    // {...}
     ND_FUNCCALL, // function()
-    ND_ADDR,   // &x
-    ND_DEREF,  // *x
-    ND_RETURN, // return
-    ND_NOP,    // Empty statement
+    ND_ADDR,     // &x
+    ND_DEREF,    // *x
+    ND_RETURN,   // return
+    ND_NOP,      // Empty statement
 } NodeKind;
 
 typedef struct Node Node;
@@ -65,22 +81,13 @@ struct Node {
     Node *args;
     Node *next;
     int val;       // kindがND_NUMの場合のみ使う
+    Type *type;    // ローカル変数の型; kindがND_LVARの場合のみ使う
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_LVARの場合のみ使う
     char *funcname; // kindがND_FUNCCALLの場合のみ使う
 };
 
-typedef struct Type Type;
-
-// 型を表す型
-struct Type {
-    enum { INT, PTR } type;
-    struct Type *pointer_to;
-};
-
-// int型の宣言
-extern Type *int_type;
-// Xのポインタ型を得る関数の宣言
-extern Type *pointer_to(Type *base_type);
+// ノードがポインタ型であるか判定する関数の宣言
+extern bool is_pointer(Node *node);
 
 typedef struct Var Var;
 
@@ -89,7 +96,7 @@ struct Var {
     Var *next;  // 次の変数かNULL
     char *name; // 変数の名前
     int len;    // 変数名の文字列長
-    Type type;  // 変数の型
+    Type *type;  // 変数の型
     int offset; // RBPからのオフセット
 };
 

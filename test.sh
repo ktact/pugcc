@@ -1,11 +1,21 @@
 #!/bin/bash
 cat <<EOF | gcc -xc -c -o tmp2.o -
+#include <stdlib.h>
+
 int ret3() { return 3; }
 int ret5() { return 5; }
 int add(int x, int y) { return x + y; }
 int sub(int x, int y) { return x - y; }
 int add6(int a, int b, int c, int d, int e, int f) {
   return a + b + c + d + e + f;
+}
+int *alloc4(int v1, int v2, int v3, int v4) {
+    int *p = (int *)malloc(4 * sizeof(int));
+    p[0] = v1;
+    p[1] = v2;
+    p[2] = v3;
+    p[3] = v4;
+    return p;
 }
 EOF
 
@@ -96,5 +106,15 @@ assert  3 "int main() { int x; x=3; int y; y=5; return *(&y+8); }"
 assert  3 "int main() { int x; x=3; int y; y=5; int z; z=&y+8; return *z; }"
 
 assert  3 "int main() { int x; int *y; y=&x; *y=3; return x; }"
+
+assert  2 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; q=p+1; return *q; }"
+assert  4 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; q=p+2; return *q; }"
+assert  8 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; q=p+3; return *q; }"
+assert  8 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; p=p+3; return *p; }"
+assert  4 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; p=p+3; q=p-1; return *q; }"
+assert  2 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; p=p+3; q=p-2; return *q; }"
+assert  1 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; p=p+3; q=p-3; return *q; }"
+assert  3 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; q=p;   p=p+3; return p-q; }"
+
 
 echo OK

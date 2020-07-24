@@ -28,6 +28,7 @@ static Var *new_local_var(Token *token, Type *type) {
     Var *local_var = calloc(1, sizeof(Var));
     local_var->name = token->str;
     local_var->len  = token->len;
+    local_var->type = type;
     if (locals) {
         Var *last_var = locals;
         while (last_var->next)
@@ -274,12 +275,27 @@ Node *add() {
     Node *node = mul();
 
     for (;;) {
-        if (consume("+"))
-            node = new_binary(ND_ADD, node, mul());
-        else if (consume("-"))
-            node = new_binary(ND_SUB, node, mul());
-        else
+        if (consume("+")) {
+            Node *lhd = node;
+            Node *rhd = mul();
+            if (is_pointer(lhd) || is_pointer(rhd)) {
+                node = new_binary(ND_PTR_ADD, lhd, rhd);
+            } else {
+                node = new_binary(ND_ADD,     lhd, rhd);
+            }
+        } else if (consume("-")) {
+            Node *lhd = node;
+            Node *rhd = mul();
+            if (is_pointer(lhd) && is_pointer(rhd)) {
+                node = new_binary(ND_PTR_DIFF, lhd, rhd);
+            } else if (is_pointer(lhd) || is_pointer(rhd)) {
+                node = new_binary(ND_PTR_SUB,  lhd, rhd);
+            } else {
+                node = new_binary(ND_SUB,      lhd, rhd);
+            }
+        } else {
             return node;
+        }
     }
 }
 
@@ -336,6 +352,7 @@ Node *primary() {
 
         Var *lvar = find_lvar(tok);
         if (lvar) {
+            node->type   = lvar->type;
             node->offset = lvar->offset;
         } else {
             error_at(tok->str, "未定義の変数を参照しています");
