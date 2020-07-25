@@ -302,7 +302,7 @@ Node *add() {
         if (consume("+")) {
             Node *lhd = node;
             Node *rhd = mul();
-            if (is_pointer(lhd) || is_pointer(rhd)) {
+            if (is_pointer(lhd) || is_pointer(rhd) || is_array(lhd) || is_array(rhd)) {
                 node = new_binary(ND_PTR_ADD, lhd, rhd);
             } else {
                 node = new_binary(ND_ADD,     lhd, rhd);
@@ -310,7 +310,7 @@ Node *add() {
         } else if (consume("-")) {
             Node *lhd = node;
             Node *rhd = mul();
-            if (is_pointer(lhd) && is_pointer(rhd)) {
+            if (is_pointer(lhd) && is_pointer(rhd) || is_array(lhd) || is_array(rhd)) {
                 node = new_binary(ND_PTR_DIFF, lhd, rhd);
             } else if (is_pointer(lhd) || is_pointer(rhd)) {
                 node = new_binary(ND_PTR_SUB,  lhd, rhd);

@@ -89,6 +89,8 @@ struct Node {
 
 // ノードがポインタ型であるか判定する関数の宣言
 extern bool is_pointer(Node *node);
+// ノードが配列型であるか判定する関数の宣言
+extern bool is_array(Node *node);
 // ノードに型を付与する関数の宣言
 extern void add_type(Node *Node);
 
