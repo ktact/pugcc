@@ -116,5 +116,13 @@ assert  2 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; p=p+3; q=p-2; retu
 assert  1 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; p=p+3; q=p-3; return *q; }"
 assert  3 "int main() { int *p; p=alloc4(1, 2, 4, 8); int *q; q=p;   p=p+3; return p-q; }"
 
+assert  4 "int main() { int x;  return sizeof(x); }"
+assert  8 "int main() { int *x; return sizeof(x); }"
+assert  4 "int main() { int x;  return sizeof(x+3); }"
+assert  4 "int main() { int x;  return sizeof(x-2); }"
+assert  8 "int main() { int *x; return sizeof(*x); }"
+assert  8 "int main() { int x;  return sizeof(&x); }"
+assert  4 "int main() { return sizeof(1); }"
+assert  4 "int main() { return sizeof(sizeof(1)); }"
 
 echo OK

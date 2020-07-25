@@ -31,6 +31,7 @@ typedef struct Type Type;
 struct Type {
     enum { INT, PTR } type;
     struct Type *pointer_to;
+    int size;
 };
 
 // int型の宣言
@@ -88,6 +89,8 @@ struct Node {
 
 // ノードがポインタ型であるか判定する関数の宣言
 extern bool is_pointer(Node *node);
+// ノードに型を付与する関数の宣言
+extern void add_type(Node *Node);
 
 typedef struct Var Var;
 

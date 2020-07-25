@@ -153,6 +153,7 @@ Function *funcdef() {
 Node *stmt() {
     if (consume("return")) {
         Node *node = new_unary(ND_RETURN, expr());
+        add_type(node);
         expect(";");
         return node;
     }
@@ -165,6 +166,7 @@ Node *stmt() {
         node->then = stmt();
         if (consume("else"))
             node->els = stmt();
+        add_type(node);
         return node;
     }
 
@@ -174,6 +176,7 @@ Node *stmt() {
         node->cond = expr();
         expect(")");
         node->then = stmt();
+        add_type(node);
         return node;
     }
 
@@ -193,6 +196,7 @@ Node *stmt() {
             expect(")");
         }
         node->then = stmt();
+        add_type(node);
         return node;
     }
 
@@ -207,6 +211,7 @@ Node *stmt() {
 
         Node *node = new_node(ND_BLOCK);
         node->body = head.next;
+        add_type(node);
         return node;
     }
 
@@ -313,8 +318,19 @@ Node *mul() {
     }
 }
 
-// unary = ("+" | "-" | "*" | "&")? unary | primary
+// unary = "sizeof" unary | ("+" | "-" | "*" | "&")? unary | primary
 Node *unary() {
+    if (consume("sizeof")) {
+        Node *node = unary();
+        add_type(node);
+        switch (node->type->type) {
+        case INT:
+            return new_num_node(4);
+        case PTR:
+            return new_num_node(8);
+        }
+    }
+
     if (consume("+"))
         return unary();
     if (consume("-"))
@@ -325,8 +341,6 @@ Node *unary() {
         return new_unary(ND_ADDR, unary());
     return primary();
 }
-
-
 
 // primary = num | ident funcargs? | "(" expr ")"
 Node *primary() {
@@ -339,25 +353,25 @@ Node *primary() {
 
     Token *tok = consume_ident();
     if (tok) {
-        Node *node = calloc(1, sizeof(Node));
-        // 関数呼び出し
         if (consume("(")) {
-            node->kind     = ND_FUNCCALL;
+            // 関数呼び出し
+            Node *node     = new_node(ND_FUNCCALL);
             node->funcname = strndup(tok->str, tok->len);
             node->args     = funcargs();
             return node;
-        }
-        // 変数
-        node->kind = ND_LVAR;
-
-        Var *lvar = find_lvar(tok);
-        if (lvar) {
-            node->type   = lvar->type;
-            node->offset = lvar->offset;
         } else {
-            error_at(tok->str, "未定義の変数を参照しています");
+            // 変数
+            Node *node = new_node(ND_LVAR);
+
+            Var *lvar = find_lvar(tok);
+            if (lvar) {
+                node->type   = lvar->type;
+                node->offset = lvar->offset;
+            } else {
+                error_at(tok->str, "未定義の変数を参照しています");
+            }
+            return node;
         }
-        return node;
     }
 
     // そうでなければ数値のはず
@@ -480,7 +494,7 @@ static bool is_alnum(char c) {
 }
 
 static int reserved_word(char *p) {
-    char *keywords[] = { "return", "if", "else", "while", "for", "int" };
+    char *keywords[] = { "return", "if", "else", "while", "for", "int", "sizeof" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))
