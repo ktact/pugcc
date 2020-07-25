@@ -29,16 +29,30 @@ static Var *new_local_var(Token *token, Type *type) {
     local_var->name = token->str;
     local_var->len  = token->len;
     local_var->type = type;
+
+    int offset = 0;
+    switch (type->type) {
+    case INT:
+        offset = 8;
+        break;
+    case PTR:
+        offset = 8;
+        break;
+    case ARRAY:
+        offset = 8 * type->array_size;
+        break;
+    }
+
     if (locals) {
         Var *last_var = locals;
         while (last_var->next)
             last_var = last_var->next;
 
-        local_var->offset = last_var->offset + 8;
+        local_var->offset = last_var->offset + offset;
         last_var->next = local_var;
     } else {
         locals = local_var;
-        local_var->offset = 8;
+        local_var->offset = offset;
     }
     return local_var;
 }
@@ -148,7 +162,7 @@ Function *funcdef() {
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | "{" stmt* "}"
-//      | "int" ident ";"
+//      | "int" ident ("[" num "]")?";"
 //      | expr ";"
 Node *stmt() {
     if (consume("return")) {
@@ -221,6 +235,11 @@ Node *stmt() {
             type = pointer_to(type);
 
         Token *tok = expect_ident();
+        if (consume("[")) {
+            type->type = ARRAY;
+            type->array_size = expect_number();
+            expect("]");
+        }
         Var *var = new_local_var(tok, type);
         expect(";");
         return new_node(ND_NOP);
@@ -328,6 +347,8 @@ Node *unary() {
             return new_num_node(4);
         case PTR:
             return new_num_node(8);
+        case ARRAY:
+            return new_num_node(4 * node->type->array_size);
         }
     }
 
@@ -540,7 +561,7 @@ Token *tokenize() {
             continue;
         }
 
-        if (strchr("+-*/&(){}<>=;,", *p)) {
+        if (strchr("+-*/&(){}<>=;,[]", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }

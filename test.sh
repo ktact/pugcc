@@ -125,4 +125,5 @@ assert  8 "int main() { int x;  return sizeof(&x); }"
 assert  4 "int main() { return sizeof(1); }"
 assert  4 "int main() { return sizeof(sizeof(1)); }"
 
+assert 40 "int main() { int a[10]; return sizeof(a); }"
 echo OK
