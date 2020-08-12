@@ -30,12 +30,15 @@ typedef struct Type Type;
 // 型を表す型
 struct Type {
     enum { INT, PTR, ARRAY } type;
-    struct Type *pointer_to;
+    int size;
     int array_size;
+    struct Type *pointer_to;
 };
 
 // int型の宣言
 extern Type *int_type;
+// intの配列型を得る関数の宣言
+extern Type *array_of_int(int len);
 // Xのポインタ型を得る関数の宣言
 extern Type *pointer_to(Type *base_type);
 

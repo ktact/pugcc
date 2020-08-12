@@ -30,18 +30,7 @@ static Var *new_local_var(Token *token, Type *type) {
     local_var->len  = token->len;
     local_var->type = type;
 
-    int offset = 0;
-    switch (type->type) {
-    case INT:
-        offset = 8;
-        break;
-    case PTR:
-        offset = 8;
-        break;
-    case ARRAY:
-        offset = 8 * type->array_size;
-        break;
-    }
+    int offset = type->size + (type->size % 16);
 
     if (locals) {
         Var *last_var = locals;
@@ -54,6 +43,7 @@ static Var *new_local_var(Token *token, Type *type) {
         locals = local_var;
         local_var->offset = offset;
     }
+
     return local_var;
 }
 
@@ -83,6 +73,7 @@ int expect_number();
 Token *expect_ident();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
+
 // program = funcdef*
 Function *program() {
     Function head = {};
@@ -147,10 +138,12 @@ Function *funcdef() {
 
         f->body = head.next;
 
-        // 関数のスタックサイズ=(関数の引数の個数+関数内のローカル変数の個数)*8
+        int stack_size = 0;
         for (Var *var = locals; var; var = var->next)
-            f->stack_size += 8;
- 
+            stack_size = var->offset;
+
+        f->stack_size = stack_size;
+
         return f;
     }
 
@@ -236,8 +229,8 @@ Node *stmt() {
 
         Token *tok = expect_ident();
         if (consume("[")) {
-            type->type = ARRAY;
-            type->array_size = expect_number();
+            int array_size = expect_number();
+            type = array_of_int(array_size);
             expect("]");
         }
         Var *var = new_local_var(tok, type);

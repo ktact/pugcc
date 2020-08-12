@@ -101,9 +101,9 @@ assert 55 "int main() { return fib(9); } int fib(int x) { if (x<=1) return 1; re
 
 assert  3 "int main() { int x; x=3; return *&x; }"
 assert  3 "int main() { int x; x=3; int y; y=&x; int z; z=&y; return **z; }"
-assert  5 "int main() { int x; x=3; int y; y=5; return *(&x-8); }"
-assert  3 "int main() { int x; x=3; int y; y=5; return *(&y+8); }"
-assert  3 "int main() { int x; x=3; int y; y=5; int z; z=&y+8; return *z; }"
+assert  5 "int main() { int x; x=3; int y; y=5; return *(&x-16); }"
+assert  3 "int main() { int x; x=3; int y; y=5; return *(&y+16); }"
+assert  3 "int main() { int x; x=3; int y; y=5; int z; z=&y+16; return *z; }"
 
 assert  3 "int main() { int x; int *y; y=&x; *y=3; return x; }"
 
@@ -127,5 +127,15 @@ assert  4 "int main() { return sizeof(sizeof(1)); }"
 
 assert 40 "int main() { int a[10]; return sizeof(a); }"
 assert  3 "int main() { int a[2]; *a=1; *(a+1)=2; int *p; p=a; return *p+*(p+1); }"
+
+assert  3 "int main() { int  x;    x=3;           return  x;     }"
+assert  3 "int main() { int x[2]; *x=3;           return *x;     }"
+assert  3 "int main() { int x[1]; int y[1]; *y=3; return *y;     }"
+assert  3 "int main() { int x[1]; *x=3;           return *x;     }"
+assert  3 "int main() { int *x;   *x=3;           return *x;     }"
+
+assert  3 "int main() { int x[3]; *x=3;           return *x;     }"
+assert  4 "int main() { int x[3]; *(x+1)=4;       return *(x+1); }"
+assert  5 "int main() { int x[3]; *(x+2)=5;       return *(x+2); }"
 
 echo OK

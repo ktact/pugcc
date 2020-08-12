@@ -29,9 +29,13 @@ static void gen(Node *node) {
         return;
     case ND_LVAR:
         gen_lval(node);
-        printf("  pop rax\n");
-        printf("  mov rax, [rax]\n");
-        printf("  push rax\n");
+
+        if (!is_array(node))
+        {
+            printf("  pop rax\n");
+            printf("  mov rax, [rax]\n");
+            printf("  push rax\n");
+        }
         return;
     case ND_ASSIGN:
         gen_lval(node->lhs);
@@ -116,7 +120,10 @@ static void gen(Node *node) {
         gen_lval(node->lhs);
         return;
     case ND_DEREF:
+        // 変数のアドレスをスタックに積む
         gen(node->lhs);
+
+        // アドレスに格納された値をスタックに積む
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");
         printf("  push rax\n");
