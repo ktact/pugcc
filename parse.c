@@ -356,7 +356,7 @@ Node *unary() {
     return primary();
 }
 
-// primary = num | ident funcargs? | "(" expr ")"
+// primary = num | ident funcargs? | ident ("[" num "]")? | "(" expr ")"
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -373,8 +373,29 @@ Node *primary() {
             node->funcname = strndup(tok->str, tok->len);
             node->args     = funcargs();
             return node;
+        } else if (consume("[")) {
+            // 配列参照
+
+            /*
+             * x[n]を*(x+n)に読み替える
+             * 例) a[3]を*(a+3)に読み替える
+             */
+            Var *array = find_lvar(tok);
+            if (!array) {
+                error_at(tok->str, "未定義の変数を参照しています");
+            }
+
+            Node *ptr_to_array   = new_node(ND_LVAR);
+            ptr_to_array->type   = array->type;
+            ptr_to_array->offset = array->offset;
+
+            Node *index = new_num_node(expect_number());
+
+            expect("]");
+
+            return new_unary(ND_DEREF, new_binary(ND_PTR_ADD, ptr_to_array, index));
         } else {
-            // 変数
+            // 変数参照
             Node *node = new_node(ND_LVAR);
 
             Var *lvar = find_lvar(tok);
