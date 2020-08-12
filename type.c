@@ -4,7 +4,7 @@ Type *int_type   = &(Type){ INT, 8 };
 
 Type *pointer_to(Type *base_type) {
     Type *ptr = calloc(1, sizeof(Type));
-    ptr->type = PTR;
+    ptr->kind = PTR;
     ptr->size  = 8;
     ptr->pointer_to = base_type;
     return ptr;
@@ -12,18 +12,18 @@ Type *pointer_to(Type *base_type) {
 
 Type *array_of_int(int len) {
     Type *array = calloc(1, sizeof(Type));
-    array->type       = ARRAY;
+    array->kind       = ARRAY;
     array->array_size = len;
     array->size       = 8 * array->array_size;
     return array;
 }
 
 bool is_pointer(Node *node) {
-    return node->kind == ND_LVAR && node->type->type == PTR;
+    return node->kind == ND_LVAR && node->type->kind == PTR;
 }
 
 bool is_array(Node *node) {
-    return node->kind == ND_LVAR && node->type->type == ARRAY;
+    return node->kind == ND_LVAR && node->type->kind == ARRAY;
 }
 
 void add_type(Node *node) {
@@ -67,7 +67,7 @@ void add_type(Node *node) {
         node->type = pointer_to(node->lhs->type);
         break;
     case ND_DEREF:
-        if (node->lhs->type->type == PTR)
+        if (node->lhs->type->kind == PTR)
             node->type = node->lhs->type;
         else
             node->type = int_type;

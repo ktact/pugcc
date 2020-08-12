@@ -29,7 +29,7 @@ typedef struct Type Type;
 
 // 型を表す型
 struct Type {
-    enum { INT, PTR, ARRAY } type;
+    enum { INT, PTR, ARRAY } kind;
     int size;
     int array_size;
     struct Type *pointer_to;

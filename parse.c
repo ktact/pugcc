@@ -335,7 +335,7 @@ Node *unary() {
     if (consume("sizeof")) {
         Node *node = unary();
         add_type(node);
-        switch (node->type->type) {
+        switch (node->type->kind) {
         case INT:
             return new_num_node(4);
         case PTR:
