@@ -1,5 +1,8 @@
 #include "pugcc.h"
 
+static Var *locals;
+static Var *globals;
+
 Node *new_node(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
@@ -24,11 +27,18 @@ Node *new_num_node(int val) {
     return node;
 }
 
+static Var *new_var(Token *token, Type *type, bool is_local) {
+    Var *var = calloc(1, sizeof(Var));
+    var->name     = strndup(token->str, token->len);
+    var->len      = token->len;
+    var->type     = type;
+    var->is_local = is_local;
+
+    return var;
+}
+
 static Var *new_local_var(Token *token, Type *type) {
-    Var *local_var = calloc(1, sizeof(Var));
-    local_var->name = token->str;
-    local_var->len  = token->len;
-    local_var->type = type;
+    Var *var = new_var(token, type, true);
 
     int offset = type->size + (type->size % 16);
 
@@ -37,25 +47,44 @@ static Var *new_local_var(Token *token, Type *type) {
         while (last_var->next)
             last_var = last_var->next;
 
-        local_var->offset = last_var->offset + offset;
-        last_var->next = local_var;
+        var->offset = last_var->offset + offset;
+        last_var->next = var;
     } else {
-        locals = local_var;
-        local_var->offset = offset;
+        locals = var;
+        var->offset = offset;
     }
 
-    return local_var;
+   return var;
+}
+
+static Var *new_global_var(Token *token, Type *type) {
+    Var *var = new_var(token, type, false);
+
+    if (globals) {
+        Var *last_var = globals;
+        while (last_var->next)
+            last_var = last_var->next;
+
+        last_var->next = var;
+    } else {
+        globals = var;
+    }
+
+    return var;
 }
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
-Var *find_lvar(Token *tok) {
+static Var *find_var(Token *tok) {
     for (Var *var = locals; var; var = var->next)
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+            return var;
+    for (Var *var = globals; var; var = var->next)
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
             return var;
     return NULL;
 }
 
-Function *funcdef();
+Function *func_decl();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -74,20 +103,8 @@ Token *expect_ident();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// program = funcdef*
-Function *program() {
-    Function head = {};
-    Function *cur = &head;
-
-    while(!at_eof()) {
-        cur->next = funcdef();
-        cur = cur->next;
-    }
-
-    return head.next;
-}
-
-static Type *var_type() {
+// type = "int" "*"?
+static Type *read_type() {
     expect("int");
     Type *type = int_type;
     while (consume("*"))
@@ -95,16 +112,64 @@ static Type *var_type() {
     return type;
 }
 
+static bool is_function() {
+    // 本関数呼び出し時点でのトークンの読み出し位置を覚えておく
+    Token *tok = token;
+
+    // トークンを先読みして型、識別子、（であれば関数宣言であると判断する
+    read_type();
+    bool is_function = consume_ident() && consume("(");
+
+    // トークンの読み出し位置を元に戻す
+    token = tok;
+
+    return is_function;
+}
+
+static void read_global_var_decl() {
+    Type *type = read_type();
+    Token *name = consume_ident();
+    if (consume("[")) {
+        int array_size = expect_number();
+        type = array_of_int(array_size);
+        expect("]");
+    }
+    expect(";");
+    Var *var = new_global_var(name, type);
+}
+
+// program = ((type func_decl) | (type ident ("[" num "]")?))*
+Program *program() {
+    Function head = {};
+    Function *cur = &head;
+    globals = NULL;
+
+    while(!at_eof()) {
+        if (is_function()) {
+            cur->next = func_decl();
+            cur = cur->next;
+        } else {
+            read_global_var_decl();
+        }
+    }
+
+    Program *program = calloc(1, sizeof(Program));
+    program->functions = head.next;
+    program->global_variables = globals;
+
+    return program;
+}
+
 static Var *read_func_params() {
     if (consume(")"))
         return NULL;
 
-    Type *type = var_type();
+    Type *type = read_type();
 
     Var *head = new_local_var(expect_ident(), type);
     Var *cur  = head;
     while (consume(",")) {
-        type = var_type();
+        type = read_type();
 
         cur->next = new_local_var(expect_ident(), type);
         cur = cur->next;
@@ -114,10 +179,9 @@ static Var *read_func_params() {
     return head;
 }
 
-// funcdef = "int" ident "(" params? ")" "{" stmt* "}"
-Function *funcdef() {
-    expect("int");
-
+// func_decl = type ident "(" params? ")" "{" stmt* "}"
+Function *func_decl() {
+    Type *type = read_type();
     Token *tok = consume_ident();
     if (tok) {
         Function *f = calloc(1, sizeof(Function));
@@ -380,14 +444,15 @@ Node *primary() {
              * x[n]を*(x+n)に読み替える
              * 例) a[3]を*(a+3)に読み替える
              */
-            Var *array = find_lvar(tok);
+            Var *array = find_var(tok);
             if (!array) {
                 error_at(tok->str, "未定義の変数を参照しています");
             }
 
-            Node *ptr_to_array   = new_node(ND_LVAR);
+            Node *ptr_to_array   = new_node(ND_VAR);
             ptr_to_array->type   = array->type;
             ptr_to_array->offset = array->offset;
+            ptr_to_array->var    = array;
 
             Node *index = new_num_node(expect_number());
 
@@ -396,12 +461,13 @@ Node *primary() {
             return new_unary(ND_DEREF, new_binary(ND_PTR_ADD, ptr_to_array, index));
         } else {
             // 変数参照
-            Node *node = new_node(ND_LVAR);
+            Node *node = new_node(ND_VAR);
 
-            Var *lvar = find_lvar(tok);
-            if (lvar) {
-                node->type   = lvar->type;
-                node->offset = lvar->offset;
+            Var *var = find_var(tok);
+            if (var) {
+                node->type   = var->type;
+                node->offset = var->offset;
+                node->var    = var;
             } else {
                 error_at(tok->str, "未定義の変数を参照しています");
             }

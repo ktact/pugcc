@@ -8,7 +8,7 @@ static char *arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 static void gen(Node *node);
 
 void gen_lval(Node *node) {
-    if (node->kind != ND_LVAR && node->kind != ND_DEREF)
+    if (node->kind != ND_VAR && node->kind != ND_DEREF)
         error("代入の左辺値が変数ではありません");
 
     if (node->kind == ND_DEREF) {
@@ -16,9 +16,14 @@ void gen_lval(Node *node) {
         gen(node->lhs);
     } else {
         // 左辺値のアドレスをスタックに積む
-        printf("  mov rax, rbp\n");
-        printf("  sub rax, %d\n", node->offset);
-        printf("  push rax\n");
+        Var *var = node->var;
+        if (var->is_local) {
+            printf("  mov rax, rbp\n");
+            printf("  sub rax, %d\n", node->offset);
+            printf("  push rax\n");
+        } else {
+            printf("  push offset %s\n", var->name);
+        }
     }
 }
 
@@ -27,10 +32,10 @@ static void gen(Node *node) {
     case ND_NUM:
         printf("  push %d\n", node->val);
         return;
-    case ND_LVAR:
+    case ND_VAR:
         gen_lval(node);
 
-        if (!is_array(node))
+        if (!is_array(node) && node->var->is_local)
         {
             printf("  pop rax\n");
             printf("  mov rax, [rax]\n");
@@ -199,10 +204,17 @@ static void gen(Node *node) {
     printf("  push rax\n");
 }
 
-// コード生成
-void codegen(Function *program) {
-    printf(".intel_syntax noprefix\n");
-    for (Function *f = program; f; f = f->next) {
+static void emit_data(Program *program) {
+    printf(".data\n");
+    for (Var *global_var = program->global_variables; global_var; global_var = global_var->next) {
+        printf("%s:\n", global_var->name);
+        printf("  .zero %d\n", global_var->type->size);
+    }
+}
+
+static void emit_text(Program *program) {
+    printf(".text\n");
+    for (Function *f = program->functions; f; f = f->next) {
         printf(".global %s\n", f->name);
         printf("%s:\n", f->name);
 
@@ -225,4 +237,9 @@ void codegen(Function *program) {
     }
 }
 
-
+// コード生成
+void codegen(Program *program) {
+    printf(".intel_syntax noprefix\n");
+    emit_data(program);
+    emit_text(program);
+}

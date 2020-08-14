@@ -19,11 +19,11 @@ Type *array_of_int(int len) {
 }
 
 bool is_pointer(Node *node) {
-    return node->kind == ND_LVAR && node->type->kind == PTR;
+    return node->kind == ND_VAR && node->type->kind == PTR;
 }
 
 bool is_array(Node *node) {
-    return node->kind == ND_LVAR && node->type->kind == ARRAY;
+    return node->kind == ND_VAR && node->type->kind == ARRAY;
 }
 
 void add_type(Node *node) {
@@ -53,7 +53,7 @@ void add_type(Node *node) {
     case ND_NE:
     case ND_LT:
     case ND_LE:
-    case ND_LVAR:
+    case ND_VAR:
     case ND_FUNCCALL:
     case ND_NUM:
         node->type = int_type;

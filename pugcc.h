@@ -42,6 +42,18 @@ extern Type *array_of_int(int len);
 // Xのポインタ型を得る関数の宣言
 extern Type *pointer_to(Type *base_type);
 
+typedef struct Var Var;
+
+// 変数を表す型
+struct Var {
+    Var  *next;     // 次の変数かNULL
+    char *name;     // 変数の名前
+    int   len;      // 変数名の文字列長
+    Type *type;     // 変数の型
+    int   offset;   // RBPからのオフセット; ローカル変数の場合にのみ使用する
+    bool  is_local;
+};
+
 // 抽象構文木のノードの種類
 typedef enum {
     ND_ADD,      // num + num
@@ -52,7 +64,7 @@ typedef enum {
     ND_MUL,      // *
     ND_DIV,      // /
     ND_ASSIGN,   // =
-    ND_LVAR,     // Local Variable
+    ND_VAR,      // Local/Global Variable
     ND_EQ,       // ==
     ND_NE,       // !=
     ND_LT,       // <
@@ -85,8 +97,9 @@ struct Node {
     Node *args;
     Node *next;
     int val;       // kindがND_NUMの場合のみ使う
-    Type *type;    // ローカル変数の型; kindがND_LVARの場合のみ使う
-    int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_LVARの場合のみ使う
+    Var *var;
+    Type *type;    // 変数の型; kindがND_VARの場合のみ使う
+    int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_VARの場合のみ使う
     char *funcname; // kindがND_FUNCCALLの場合のみ使う
 };
 
@@ -96,20 +109,6 @@ extern bool is_pointer(Node *node);
 extern bool is_array(Node *node);
 // ノードに型を付与する関数の宣言
 extern void add_type(Node *Node);
-
-typedef struct Var Var;
-
-// ローカル変数を表す型
-struct Var {
-    Var *next;  // 次の変数かNULL
-    char *name; // 変数の名前
-    int len;    // 変数名の文字列長
-    Type *type;  // 変数の型
-    int offset; // RBPからのオフセット
-};
-
-// ローカル変数情報
-Var *locals;
 
 typedef struct Function Function;
 
@@ -122,17 +121,25 @@ struct Function {
     int stack_size;
 };
 
+typedef struct Program Program;
+
+// プログラムを表す型
+struct Program {
+    Function *functions;
+    Var *global_variables;
+};
+
 // 入力プログラム
 char *user_input;
 
 // パース関数の宣言
-Function *program();
+Program *program();
 
 // トークナイズ関数の宣言
 extern Token *tokenize();
 
 // コード生成関数の宣言
-extern void codegen(Function *program);
+extern void codegen(Program *program);
 
 extern char *strndup(const char *s, size_t n);
 extern void error(char *fmt, ...);

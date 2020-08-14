@@ -24,7 +24,7 @@ assert() {
   input="$2"
 
   ./pugcc "$input" > tmp.s
-  cc -o tmp tmp.s tmp2.o
+  cc -no-pie -g -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
 
@@ -142,5 +142,10 @@ assert  3 "int main() { int x[3]; x[0]=3;         return x[0];   }"
 assert  4 "int main() { int x[3]; x[1]=4;         return x[1];   }"
 assert  5 "int main() { int x[3]; x[2]=5;         return x[2];   }"
 
+assert  0 "int x[4]; int main() { return x[0]; }"
+assert  0 "int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[0]; }"
+assert  1 "int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[1]; }"
+assert  2 "int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[2]; }"
+assert  3 "int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[3]; }"
 
 echo OK
