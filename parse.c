@@ -23,6 +23,7 @@ Node *new_unary(NodeKind kind, Node *expr) {
     add_type(node);
     return node;
 }
+
 Node *new_num_node(int val) {
     Node *node = new_node(ND_NUM);
     node->val  = val;
@@ -30,18 +31,18 @@ Node *new_num_node(int val) {
     return node;
 }
 
-static Var *new_var(Token *token, Type *type, bool is_local) {
+static Var *new_var(char *name, Type *type, bool is_local) {
     Var *var = calloc(1, sizeof(Var));
-    var->name     = strndup(token->str, token->len);
-    var->len      = token->len;
+    var->name     = name;
+    var->len      = strlen(name);
     var->type     = type;
     var->is_local = is_local;
 
     return var;
 }
 
-static Var *new_local_var(Token *token, Type *type) {
-    Var *var = new_var(token, type, true);
+static Var *new_local_var(char *name, Type *type) {
+    Var *var = new_var(name, type, true);
 
     int offset = type->size + (type->size % 16);
 
@@ -60,8 +61,8 @@ static Var *new_local_var(Token *token, Type *type) {
    return var;
 }
 
-static Var *new_global_var(Token *token, Type *type) {
-    Var *var = new_var(token, type, false);
+static Var *new_global_var(char *name, Type *type) {
+    Var *var = new_var(name, type, false);
 
     if (globals) {
         Var *last_var = globals;
@@ -77,12 +78,12 @@ static Var *new_global_var(Token *token, Type *type) {
 }
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
-static Var *find_var(Token *tok) {
+static Var *find_var(char *name) {
     for (Var *var = locals; var; var = var->next)
-        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+        if (var->len == strlen(name) && !memcmp(name, var->name, var->len))
             return var;
     for (Var *var = globals; var; var = var->next)
-        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+        if (var->len == strlen(name) && !memcmp(name, var->name, var->len))
             return var;
     return NULL;
 }
@@ -99,10 +100,10 @@ Node *unary();
 Node *primary();
 Node *funcargs();
 bool consume(char *op);
-Token *consume_ident();
+char *consume_ident();
 void expect(char *op);
 int expect_number();
-Token *expect_ident();
+char *expect_ident();
 Type *expect_type();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
@@ -139,14 +140,14 @@ static bool is_function() {
 
 static void read_global_var_decl() {
     Type *type = read_type();
-    Token *name = consume_ident();
+    char *var_name = consume_ident();
     if (consume("[")) {
         int array_size = expect_number();
         type = array_of_int(array_size);
         expect("]");
     }
     expect(";");
-    Var *var = new_global_var(name, type);
+    Var *var = new_global_var(var_name, type);
 }
 
 // program = ((type func_decl) | (type ident ("[" num "]")?))*
@@ -193,10 +194,10 @@ static Var *read_func_params() {
 // func_decl = type ident "(" params? ")" "{" stmt* "}"
 Function *func_decl() {
     Type *type = read_type();
-    Token *tok = consume_ident();
-    if (tok) {
+    char *func_name = consume_ident();
+    if (func_name) {
         Function *f = calloc(1, sizeof(Function));
-        f->name = strndup(tok->str, tok->len);
+        f->name = func_name;
         locals = NULL;
 
         expect("(");
@@ -311,13 +312,13 @@ Node *stmt() {
     while (consume("*"))
         type = pointer_to(type);
 
-    Token *tok = expect_ident();
+    char *var_name = expect_ident();
     if (consume("[")) {
         int array_size = expect_number();
         type = array_of_int(array_size);
         expect("]");
     }
-    Var *var = new_local_var(tok, type);
+    Var *var = new_local_var(var_name, type);
     expect(";");
     return new_node(ND_NOP);
 }
@@ -447,12 +448,12 @@ Node *primary() {
         return node;
     }
 
-    Token *tok = consume_ident();
-    if (tok) {
+    char *ident = consume_ident();
+    if (ident) {
         if (consume("(")) {
             // 関数呼び出し
             Node *node     = new_node(ND_FUNCCALL);
-            node->funcname = strndup(tok->str, tok->len);
+            node->funcname = ident;
             node->args     = funcargs();
             add_type(node);
             return node;
@@ -463,9 +464,9 @@ Node *primary() {
              * x[n]を*(x+n)に読み替える
              * 例) a[3]を*(a+3)に読み替える
              */
-            Var *array = find_var(tok);
+            Var *array = find_var(ident);
             if (!array) {
-                error_at(tok->str, "未定義の変数を参照しています");
+                error_at(ident, "未定義の変数を参照しています");
             }
 
             Node *ptr_to_array   = new_node(ND_VAR);
@@ -483,13 +484,13 @@ Node *primary() {
             // 変数参照
             Node *node = new_node(ND_VAR);
 
-            Var *var = find_var(tok);
+            Var *var = find_var(ident);
             if (var) {
                 node->type   = var->type;
                 node->offset = var->offset;
                 node->var    = var;
             } else {
-                error_at(tok->str, "未定義の変数を参照しています");
+                error_at(ident, "未定義の変数を参照しています");
             }
             add_type(node);
             return node;
@@ -520,7 +521,7 @@ Node *funcargs() {
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
-    tok->str  = str;
+    tok->str  = strndup(str, len);
     tok->len  = len;
     cur->next = tok;
     return tok;
@@ -560,14 +561,14 @@ bool consume(char *op) {
     return true;
 }
 
-// 次のトークンが識別子であればトークンを1つ読み進める。
+// 次のトークンが識別子であればトークンを1つ読み進めそのトークンの文字列を返す。
 // それ以外の場合にはNULLを返す。
-Token *consume_ident() {
+char *consume_ident() {
     if (token->kind != TK_IDENT)
         return NULL;
     Token *t = token;
     token = token->next;
-    return t;
+    return strndup(t->str, t->len);
 }
 
 // 次のトークンが期待している記号の場合にはトークンを1つ読み進める。
@@ -589,14 +590,14 @@ int expect_number() {
     return val;
 }
 
-// 次のトークンが識別子の場合、トークンを1つ読み進めてそのトークンを返す。
+// 次のトークンが識別子の場合、トークンを1つ読み進めてそのトークンの文字列をを返す。
 // それ以外の場合にはエラーを報告する。
-Token *expect_ident() {
+char *expect_ident() {
     if (token->kind != TK_IDENT)
         error_at(token->str, "識別子ではありません");
     Token *t = token;
     token = token->next;
-    return t;
+    return strndup(t->str, t->len);
 }
 
 // 次のトークンが型の場合、トークンを1つ読み進めてその型を返す。
