@@ -13,17 +13,20 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = new_node(kind);
     node->lhs  = lhs;
     node->rhs  = rhs;
+    add_type(node);
     return node;
 }
 
 Node *new_unary(NodeKind kind, Node *expr) {
     Node *node = new_node(kind);
     node->lhs = expr;
+    add_type(node);
     return node;
 }
 Node *new_num_node(int val) {
     Node *node = new_node(ND_NUM);
     node->val  = val;
+    add_type(node);
     return node;
 }
 
@@ -100,13 +103,21 @@ Token *consume_ident();
 void expect(char *op);
 int expect_number();
 Token *expect_ident();
+Type *expect_type();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// type = "int" "*"?
+// type = ("int" | "char") "*"?
 static Type *read_type() {
-    expect("int");
-    Type *type = int_type;
+    Type *type = NULL;
+    if (consume("int")) {
+        type = int_type;
+    } else if (consume("char")) {
+        type = char_type;
+    } else {
+        error_at(token->str, "型ではありません");
+    }
+
     while (consume("*"))
         type = pointer_to(type);
     return type;
@@ -286,24 +297,29 @@ Node *stmt() {
         return node;
     }
 
+    Type *type = NULL;
     if (consume("int")) {
-        Type *type = int_type;
-        while (consume("*"))
-            type = pointer_to(type);
-
-        Token *tok = expect_ident();
-        if (consume("[")) {
-            int array_size = expect_number();
-            type = array_of_int(array_size);
-            expect("]");
-        }
-        Var *var = new_local_var(tok, type);
+        type = int_type;
+    } else if (consume("char")) {
+        type = char_type;
+    } else {
+        Node *node = expr();
         expect(";");
-        return new_node(ND_NOP);
+        return node;
+   }
+
+    while (consume("*"))
+        type = pointer_to(type);
+
+    Token *tok = expect_ident();
+    if (consume("[")) {
+        int array_size = expect_number();
+        type = array_of_int(array_size);
+        expect("]");
     }
-    Node *node = expr();
+    Var *var = new_local_var(tok, type);
     expect(";");
-    return node;
+    return new_node(ND_NOP);
 }
 
 // expr = assign
@@ -402,6 +418,8 @@ Node *unary() {
         switch (node->type->kind) {
         case INT:
             return new_num_node(4);
+        case CHAR:
+            return new_num_node(1);
         case PTR:
             return new_num_node(8);
         case ARRAY:
@@ -436,6 +454,7 @@ Node *primary() {
             Node *node     = new_node(ND_FUNCCALL);
             node->funcname = strndup(tok->str, tok->len);
             node->args     = funcargs();
+            add_type(node);
             return node;
         } else if (consume("[")) {
             // 配列参照
@@ -453,6 +472,7 @@ Node *primary() {
             ptr_to_array->type   = array->type;
             ptr_to_array->offset = array->offset;
             ptr_to_array->var    = array;
+            add_type(ptr_to_array);
 
             Node *index = new_num_node(expect_number());
 
@@ -471,6 +491,7 @@ Node *primary() {
             } else {
                 error_at(tok->str, "未定義の変数を参照しています");
             }
+            add_type(node);
             return node;
         }
     }
@@ -578,6 +599,22 @@ Token *expect_ident() {
     return t;
 }
 
+// 次のトークンが型の場合、トークンを1つ読み進めてその型を返す。
+// それ以外の場合にはエラーを報告する。
+Type *expect_type() {
+    if (token->kind != TK_RESERVED ||
+        (memcmp(token->str, "int",  token->len) && memcmp(token->str, "char", token->len)))
+        error_at(token->str, "型ではありません");
+
+    Token *t = token;
+    token = token->next;
+    if (memcmp(t->str, "int", t->len)) {
+        return int_type;
+    } else if (memcmp(t->str, "char", t->len)) {
+        return char_type;
+    }
+}
+
 bool at_eof() {
     return token->kind == TK_EOF;
 }
@@ -595,7 +632,7 @@ static bool is_alnum(char c) {
 }
 
 static int reserved_word(char *p) {
-    char *keywords[] = { "return", "if", "else", "while", "for", "int", "sizeof" };
+    char *keywords[] = { "return", "if", "else", "while", "for", "int", "char", "sizeof" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))

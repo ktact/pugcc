@@ -1,6 +1,7 @@
 #include "pugcc.h"
 
-Type *int_type   = &(Type){ INT, 8 };
+Type *int_type  = &(Type){ INT,  8 };
+Type *char_type = &(Type){ CHAR, 1 };
 
 Type *pointer_to(Type *base_type) {
     Type *ptr = calloc(1, sizeof(Type));
@@ -53,7 +54,11 @@ void add_type(Node *node) {
     case ND_NE:
     case ND_LT:
     case ND_LE:
+        node->type = int_type;
+        break;
     case ND_VAR:
+        node->type = node->lhs->type;
+        break;
     case ND_FUNCCALL:
     case ND_NUM:
         node->type = int_type;
@@ -64,7 +69,10 @@ void add_type(Node *node) {
         node->type = node->lhs->type;
         break;
     case ND_ADDR:
-        node->type = pointer_to(node->lhs->type);
+        if (node->lhs->type->kind == ARRAY)
+            node->type = pointer_to(ARRAY);
+        else
+            node->type = pointer_to(node->lhs->type);
         break;
     case ND_DEREF:
         if (node->lhs->type->kind == PTR)

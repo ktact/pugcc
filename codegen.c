@@ -3,20 +3,27 @@
 // ラベルの通し番号
 static int label_seq_num = 0;
 // 関数呼び出しの引数を積むレジスタ
-static char *arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+static char *_1byte_arg_regs[] = { "dil", "sil", "dl",  "cl",  "r8b", "r9b" };
+static char *_8byte_arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8",  "r9"  };
 
 static void gen(Node *node);
 
-static void load() {
+static void load(Type *type) {
     printf("  pop rax\n");
-    printf("  mov rax, [rax]\n");
+    if (type->size == 1)
+        printf("  movsx rax, byte ptr [rax]\n");
+    else
+        printf("  mov rax, [rax]\n");
     printf("  push rax\n");
 }
 
-static void store() {
+static void store(Type *type) {
     printf("  pop rdi\n");
     printf("  pop rax\n");
-    printf("  mov [rax], rdi\n");
+    if (type->size == 1)
+        printf("  mov [rax], dil\n");
+    else
+        printf("  mov [rax], rdi\n");
     printf("  push rdi\n");
 }
 
@@ -52,17 +59,13 @@ static void gen(Node *node) {
         gen_lval(node);
 
         if (!is_array(node) && node->var->is_local)
-            load();
+            load(node->type);
 
         return;
     case ND_ASSIGN:
         gen_lval(node->lhs);
         gen(node->rhs);
-
-        printf("  pop rdi\n");
-        printf("  pop rax\n");
-        printf("  mov [rax], rdi\n");
-        printf("  push rdi\n");
+        store(node->type);
         return;
     case ND_IF: {
         int seq_num = label_seq_num++;
@@ -128,7 +131,7 @@ static void gen(Node *node) {
             number_of_args++;
         }
         for (int i = number_of_args-1; i >= 0; i--) {
-            printf("  pop %s\n", arg_regs[i]);
+            printf("  pop %s\n", _8byte_arg_regs[i]);
         }
         printf("  call %s\n", node->funcname);
         printf("  push rax\n");
@@ -141,7 +144,7 @@ static void gen(Node *node) {
         // 変数のアドレスをスタックに積む
         gen(node->lhs);
 
-        load();
+        load(node->type);
         return;
     case ND_RETURN:
         gen(node->lhs);
@@ -234,8 +237,10 @@ static void emit_text(Program *program) {
         printf("  sub rsp, %d\n", f->stack_size);
 
         int i = 0;
-        for (Var *param = f->params; param; param = param->next)
-            printf("  mov [rbp-%d], %s\n", param->offset, arg_regs[i++]);
+        for (Var *param = f->params; param; param = param->next) {
+            char *reg = (param->type->size == 1) ? _1byte_arg_regs[i++] : _8byte_arg_regs[i++];
+            printf("  mov [rbp-%d], %s\n", param->offset, reg);
+        }
 
         for (Node *stmt = f->body; stmt; stmt = stmt->next)
             gen(stmt);
