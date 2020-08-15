@@ -7,7 +7,16 @@ static char *arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 
 static void gen(Node *node);
 
-void gen_lval(Node *node) {
+static void gen_addr(Var *var) {
+    if (var->is_local) {
+        printf("  lea rax, [rbp-%d]\n", var->offset);
+        printf("  push rax\n");
+    } else {
+        printf("  push offset %s\n", var->name);
+    }
+}
+
+static void gen_lval(Node *node) {
     if (node->kind != ND_VAR && node->kind != ND_DEREF)
         error("代入の左辺値が変数ではありません");
 
@@ -17,13 +26,7 @@ void gen_lval(Node *node) {
     } else {
         // 左辺値のアドレスをスタックに積む
         Var *var = node->var;
-        if (var->is_local) {
-            printf("  mov rax, rbp\n");
-            printf("  sub rax, %d\n", node->offset);
-            printf("  push rax\n");
-        } else {
-            printf("  push offset %s\n", var->name);
-        }
+        gen_addr(var);
     }
 }
 
