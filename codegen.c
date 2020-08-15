@@ -7,6 +7,19 @@ static char *arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 
 static void gen(Node *node);
 
+static void load() {
+    printf("  pop rax\n");
+    printf("  mov rax, [rax]\n");
+    printf("  push rax\n");
+}
+
+static void store() {
+    printf("  pop rdi\n");
+    printf("  pop rax\n");
+    printf("  mov [rax], rdi\n");
+    printf("  push rdi\n");
+}
+
 static void gen_addr(Var *var) {
     if (var->is_local) {
         printf("  lea rax, [rbp-%d]\n", var->offset);
@@ -39,11 +52,8 @@ static void gen(Node *node) {
         gen_lval(node);
 
         if (!is_array(node) && node->var->is_local)
-        {
-            printf("  pop rax\n");
-            printf("  mov rax, [rax]\n");
-            printf("  push rax\n");
-        }
+            load();
+
         return;
     case ND_ASSIGN:
         gen_lval(node->lhs);
@@ -131,10 +141,7 @@ static void gen(Node *node) {
         // 変数のアドレスをスタックに積む
         gen(node->lhs);
 
-        // アドレスに格納された値をスタックに積む
-        printf("  pop rax\n");
-        printf("  mov rax, [rax]\n");
-        printf("  push rax\n");
+        load();
         return;
     case ND_RETURN:
         gen(node->lhs);
