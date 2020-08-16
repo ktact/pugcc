@@ -171,18 +171,27 @@ static void gen(Node *node) {
         printf("  sub rax, rdi\n");
         break;
     case ND_PTR_ADD:
-        printf("  imul rdi, 4\n");
+        if(is_array(node->lhs))
+            printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
+        else
+            printf("  imul rdi, 4\n");
         printf("  add rax, rdi\n");
         break;
     case ND_PTR_SUB:
-        printf("  imul rdi, 4\n");
+        if (is_array(node->lhs))
+            printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
+        else
+            printf("  imul rdi, 4\n");
         printf("  sub rax, rdi\n");
         break;
     case ND_PTR_DIFF:
         // アドレスの値を引いた後にそのポインタが指す変数の型のバイト数で割る
         printf("  sub rax, rdi\n");
         printf("  cqo\n");
-        printf("  mov rdi, 4\n"); // 暫定
+        if (is_array(node->lhs))
+            printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
+        else
+            printf("  mov rdi, 4\n");
         printf("  idiv rdi\n");
         break;
     case ND_MUL:
@@ -221,7 +230,14 @@ static void emit_data(Program *program) {
     printf(".data\n");
     for (Var *global_var = program->global_variables; global_var; global_var = global_var->next) {
         printf("%s:\n", global_var->name);
-        printf("  .zero %d\n", global_var->type->size);
+
+        if (!global_var->contents) {
+            printf("  .zero %d\n", global_var->type->size);
+            continue;
+        }
+
+        for (int i = 0; i < global_var->content_len; i++)
+            printf("  .byte %d\n", global_var->contents[i]);
     }
 }
 

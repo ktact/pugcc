@@ -88,6 +88,20 @@ static Var *find_var(char *name) {
     return NULL;
 }
 
+static Node *new_var_node(Var *var) {
+    Node *node = new_node(ND_VAR);
+    node->var = var;
+    add_type(node);
+    return node;
+}
+
+static char *new_label() {
+    static int cnt = 0;
+    char buf[20];
+    sprintf(buf, ".L.data.%d", cnt++);
+    return strndup(buf, 20);
+}
+
 Function *func_decl();
 Node *stmt();
 Node *expr();
@@ -143,7 +157,7 @@ static void read_global_var_decl() {
     char *var_name = consume_ident();
     if (consume("[")) {
         int array_size = expect_number();
-        type = array_of_int(array_size);
+        type = array_of(type, array_size);
         expect("]");
     }
     expect(";");
@@ -315,7 +329,7 @@ Node *stmt() {
     char *var_name = expect_ident();
     if (consume("[")) {
         int array_size = expect_number();
-        type = array_of_int(array_size);
+        type = array_of(type, array_size);
         expect("]");
     }
     Var *var = new_local_var(var_name, type);
@@ -439,7 +453,7 @@ Node *unary() {
     return primary();
 }
 
-// primary = num | ident funcargs? | ident ("[" num "]")? | "(" expr ")"
+// primary = num | str | ident funcargs? | ident ("[" num "]")? | "(" expr ")"
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -495,6 +509,33 @@ Node *primary() {
             add_type(node);
             return node;
         }
+    }
+
+    if (token->kind == TK_STR) {
+        Token *literal = token;
+        token = token->next;
+
+        Type *type = array_of(char_type, token->len);
+        Var *var = new_global_var(new_label(), type);
+        var->contents    = literal->str;
+        var->content_len = literal->len;
+
+        if (consume("[")) {
+            // 配列参照
+            Node *ptr_to_array   = new_node(ND_VAR);
+            ptr_to_array->type   = var->type;
+            ptr_to_array->offset = var->offset;
+            ptr_to_array->var    = var;
+            add_type(ptr_to_array);
+
+            Node *index = new_num_node(expect_number());
+
+            expect("]");
+
+            return new_unary(ND_DEREF, new_binary(ND_PTR_ADD, ptr_to_array, index));
+        }
+
+        return new_var_node(var);
     }
 
     // そうでなければ数値のはず
@@ -653,6 +694,20 @@ Token *tokenize() {
         // 空白文字をスキップ
         if (isspace(*p)) {
             p++;
+            continue;
+        }
+
+        // 文字列リテラル
+        if (*p == '"') {
+            char *q = p++;
+            while (*p && *p != '"')
+                p++;
+            if (!*p)
+                error_at(q,"文字列リテラルの終端がありません");
+
+            p++; // 読み出し位置を、文字列リテラルの終端の"の次の文字にセットする
+
+            cur = new_token(TK_STR, cur, q + 1, p - q - 2);
             continue;
         }
 

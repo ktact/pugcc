@@ -156,4 +156,10 @@ assert 40 "int main() { char x[10]; return sizeof(x); }"
 assert  3 "int main() { char x[3]; x[0]=-1; x[1]=2; int y; y=4; return x[0]+y; }"
 assert  1 "int main() { return subtract_char(7, 3, 3); } int subtract_char(char a, char b, char c) { return a-b-c; }"
 
+assert 97 'int main() { return "abc"[0]; }'
+assert 98 'int main() { return "abc"[1]; }'
+assert 99 'int main() { return "abc"[2]; }'
+assert  0 'int main() { return "abc"[3]; }'
+assert  4 'int main() { return sizeof("abc"); }'
+
 echo OK

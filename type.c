@@ -11,11 +11,11 @@ Type *pointer_to(Type *base_type) {
     return ptr;
 }
 
-Type *array_of_int(int len) {
+Type *array_of(Type *type, int len) {
     Type *array = calloc(1, sizeof(Type));
     array->kind       = ARRAY;
     array->array_size = len;
-    array->size       = 8 * array->array_size;
+    array->size       = type->size * array->array_size;
     return array;
 }
 
@@ -57,7 +57,7 @@ void add_type(Node *node) {
         node->type = int_type;
         break;
     case ND_VAR:
-        node->type = node->lhs->type;
+        node->type = node->var->type;
         break;
     case ND_FUNCCALL:
     case ND_NUM:

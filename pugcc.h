@@ -9,6 +9,7 @@ typedef enum {
     TK_RESERVED, // 記号
     TK_IDENT,    // 識別子
     TK_NUM,      // 整数トークン
+    TK_STR,      // 文字列リテラルトークン
     TK_EOF,      // 入力の終わりを表すトークン
 } TokenKind;
 
@@ -39,8 +40,8 @@ struct Type {
 extern Type *int_type;
 // char型の宣言
 extern Type *char_type;
-// intの配列型を得る関数の宣言
-extern Type *array_of_int(int len);
+// 指定型の配列型を得る関数の宣言
+extern Type *array_of(Type *type, int len);
 // Xのポインタ型を得る関数の宣言
 extern Type *pointer_to(Type *base_type);
 
@@ -53,6 +54,8 @@ struct Var {
     int   len;      // 変数名の文字列長
     Type *type;     // 変数の型
     int   offset;   // RBPからのオフセット; ローカル変数の場合にのみ使用する
+    char *contents;
+    int content_len;
     bool  is_local;
 };
 
