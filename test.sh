@@ -23,7 +23,9 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./pugcc "$input" > tmp.s
+  echo "$input" > tmp.c
+  ./pugcc tmp.c > tmp.s
+  rm tmp.c
   cc -no-pie -g -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"

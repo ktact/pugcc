@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -133,6 +134,9 @@ struct Program {
     Function *functions;
     Var *global_variables;
 };
+
+// 入力ファイル名
+char *filename;
 
 // 入力プログラム
 char *user_input;
