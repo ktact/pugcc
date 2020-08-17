@@ -737,14 +737,36 @@ Token *tokenize() {
         // 文字列リテラル
         if (*p == '"') {
             char *q = p++;
-            while (*p && *p != '"')
-                p++;
-            if (!*p)
-                error_at(q,"文字列リテラルの終端がありません");
+            char buf[1024];
+            int len = 0;
+            for (;;) {
+                if (len == sizeof(buf))
+                    error_at(q, "文字列リテラルが大きすぎます");
+                if (*p == '\0')
+                    error_at(q, "文字列リテラルの終端がありません");
+                if (*p == '"')
+                    break;
 
+                if (*p == '\\') {
+                    switch (*++p) {
+                    case 'a': buf[len++] = '\a';
+                    case 'b': buf[len++] = '\b';
+                    case 't': buf[len++] = '\t';
+                    case 'n': buf[len++] = '\n';
+                    case 'v': buf[len++] = '\v';
+                    case 'f': buf[len++] = '\f';
+                    case 'r': buf[len++] = '\r';
+                    case 'e': buf[len++] = '\e';
+                    case '0': buf[len++] = '\0';
+                    }
+                } else {
+                    buf[len++] = *p;
+                }
+                p++;
+            }
             p++; // 読み出し位置を、文字列リテラルの終端の"の次の文字にセットする
 
-            cur = new_token(TK_STR, cur, q + 1, p - q - 2);
+            cur = new_token(TK_STR, cur, buf, len);
             continue;
         }
 
