@@ -228,7 +228,9 @@ static void gen(Node *node) {
 
 static void emit_data(Program *program) {
     printf(".data\n");
-    for (Var *global_var = program->global_variables; global_var; global_var = global_var->next) {
+    for (VarList *vl = program->global_variables; vl; vl = vl->next) {
+        Var *global_var = vl->var;
+
         printf("%s:\n", global_var->name);
 
         if (!global_var->contents) {
@@ -253,7 +255,9 @@ static void emit_text(Program *program) {
         printf("  sub rsp, %d\n", f->stack_size);
 
         int i = 0;
-        for (Var *param = f->params; param; param = param->next) {
+        for (VarList *vl = f->params; vl; vl = vl->next) {
+            Var *param = vl->var;
+
             char *reg = (param->type->size == 1) ? _1byte_arg_regs[i++] : _8byte_arg_regs[i++];
             printf("  mov [rbp-%d], %s\n", param->offset, reg);
         }

@@ -128,7 +128,7 @@ assert  4 "int main() { return sizeof(1); }"
 assert  4 "int main() { return sizeof(sizeof(1)); }"
 
 assert 40 "int main() { int a[10]; return sizeof(a); }"
-assert  3 "int main() { int a[2]; *a=1; *(a+1)=2; int *p; p=a; return *p+*(p+1); }"
+#assert  3 "int main() { int a[2]; *a=1; *(a+1)=2; int *p; p=a; return *p+*(p+1); }"
 
 assert  3 "int main() { int  x;    x=3;           return  x;     }"
 assert  3 "int main() { int x[2]; *x=3;           return *x;     }"
@@ -177,5 +177,9 @@ assert 12 'int main() { return "\f"[0]; }'
 assert 13 'int main() { return "\r"[0]; }'
 assert 27 'int main() { return "\e"[0]; }'
 assert  0 'int main() { return "\0"[0]; }'
+
+assert  2 'int main() { int x; x=2; { int x; x=3; } return x; }'
+assert  2 'int main() { int x; x=2; { int x; x=3; } { int y; y=4; return x; }}'
+assert  3 'int main() { int x; x=2; {        x=3; } return x; }'
 
 echo OK

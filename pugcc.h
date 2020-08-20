@@ -50,7 +50,6 @@ typedef struct Var Var;
 
 // 変数を表す型
 struct Var {
-    Var  *next;     // 次の変数かNULL
     char *name;     // 変数の名前
     int   len;      // 変数名の文字列長
     Type *type;     // 変数の型
@@ -58,6 +57,13 @@ struct Var {
     char *contents;
     int content_len;
     bool  is_local;
+};
+
+typedef struct VarList VarList;
+
+struct VarList {
+    Var *var;
+    VarList *next;
 };
 
 // 抽象構文木のノードの種類
@@ -122,7 +128,7 @@ typedef struct Function Function;
 struct Function {
     char     *name;
     Node     *body;
-    Var      *params;
+    VarList  *params;
     Function *next;
     int stack_size;
 };
@@ -132,7 +138,7 @@ typedef struct Program Program;
 // プログラムを表す型
 struct Program {
     Function *functions;
-    Var *global_variables;
+    VarList *global_variables;
 };
 
 // 入力ファイル名

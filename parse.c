@@ -1,7 +1,8 @@
 #include "pugcc.h"
 
-static Var *locals;
-static Var *globals;
+static VarList *locals  = NULL;
+static VarList *globals = NULL;
+static VarList *scope   = NULL;
 
 Node *new_node(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
@@ -38,53 +39,45 @@ static Var *new_var(char *name, Type *type, bool is_local) {
     var->type     = type;
     var->is_local = is_local;
 
+    VarList *sc = calloc(1, sizeof(VarList));
+    sc->var = var;
+    sc->next = scope;
+    scope = sc;
+
     return var;
 }
 
 static Var *new_local_var(char *name, Type *type) {
     Var *var = new_var(name, type, true);
 
-    int offset = type->size + (type->size % 16);
-
-    if (locals) {
-        Var *last_var = locals;
-        while (last_var->next)
-            last_var = last_var->next;
-
-        var->offset = last_var->offset + offset;
-        last_var->next = var;
-    } else {
-        locals = var;
-        var->offset = offset;
-    }
-
-   return var;
+    VarList *vl = calloc(1, sizeof(VarList));
+    vl->var = var;
+    vl->next = locals;
+    var->offset = type->size + (type->size % 16);
+    if (locals)
+        var->offset += locals->var->offset;
+    locals = vl;
+    return var;
 }
 
 static Var *new_global_var(char *name, Type *type) {
     Var *var = new_var(name, type, false);
 
-    if (globals) {
-        Var *last_var = globals;
-        while (last_var->next)
-            last_var = last_var->next;
-
-        last_var->next = var;
-    } else {
-        globals = var;
-    }
+    VarList *vl = calloc(1, sizeof(VarList));
+    vl->var = var;
+    vl->next = globals;
+    globals = vl;
 
     return var;
 }
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 static Var *find_var(char *name) {
-    for (Var *var = locals; var; var = var->next)
+    for (VarList *vl = scope; vl; vl = vl->next) {
+        Var *var = vl->var;
         if (var->len == strlen(name) && !memcmp(name, var->name, var->len))
             return var;
-    for (Var *var = globals; var; var = var->next)
-        if (var->len == strlen(name) && !memcmp(name, var->name, var->len))
-            return var;
+    }
     return NULL;
 }
 
@@ -104,6 +97,7 @@ static char *new_label() {
 
 Function *func_decl();
 Node *stmt();
+Node *stmt2();
 Node *expr();
 Node *assign();
 Node *equality();
@@ -186,21 +180,28 @@ Program *program() {
     return program;
 }
 
-static Var *read_func_params() {
+static VarList *read_func_param() {
+    Type *type = read_type();
+    char *name = expect_ident();
+
+    VarList *vl = calloc(1, sizeof(VarList));
+    vl->var = new_local_var(name, type);
+
+    return vl;
+}
+
+static VarList *read_func_params() {
     if (consume(")"))
         return NULL;
 
-    Type *type = read_type();
+    VarList *head = read_func_param();
+    VarList *cur = head;
 
-    Var *head = new_local_var(expect_ident(), type);
-    Var *cur  = head;
-    while (consume(",")) {
-        type = read_type();
-
-        cur->next = new_local_var(expect_ident(), type);
+    while (!consume(")")) {
+        expect(",");
+        cur->next = read_func_param();
         cur = cur->next;
     }
-    expect(")");
 
     return head;
 }
@@ -215,6 +216,8 @@ Function *func_decl() {
         locals = NULL;
 
         expect("(");
+
+        VarList *sc = scope;
         f->params = read_func_params();
         expect("{");
 
@@ -225,12 +228,15 @@ Function *func_decl() {
             cur->next = stmt();
             cur = cur->next;
         }
+        scope = sc;
 
         f->body = head.next;
 
         int stack_size = 0;
-        for (Var *var = locals; var; var = var->next)
-            stack_size = var->offset;
+        for (VarList *vl = locals; vl; vl = vl->next) {
+            Var *var = vl->var;
+            stack_size += var->offset;
+        }
 
         f->stack_size = stack_size;
 
@@ -240,14 +246,20 @@ Function *func_decl() {
     return NULL;
 }
 
-// stmt = "return" expr ";"
-//      | "if" "(" expr ")" stmt ("else" stmt)?
-//      | "while" "(" expr ")" stmt
-//      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-//      | "{" stmt* "}"
-//      | "int" ident ("[" num "]")?";"
-//      | expr ";"
 Node *stmt() {
+    Node *node = stmt2();
+    add_type(node);
+    return node;
+}
+
+// stmt2 = "return" expr ";"
+//       | "if" "(" expr ")" stmt ("else" stmt)?
+//       | "while" "(" expr ")" stmt
+//       | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//       | "{" stmt* "}"
+//       | "int" ident ("[" num "]")?";"
+//       | expr ";"
+Node *stmt2() {
     if (consume("return")) {
         Node *node = new_unary(ND_RETURN, expr());
         add_type(node);
@@ -301,10 +313,12 @@ Node *stmt() {
         Node head = {};
         Node *cur = &head;
 
+        VarList *sc = scope;
         while (!consume("}")) {
             cur->next = stmt();
             cur = cur->next;
         }
+        scope = sc;
 
         Node *node = new_node(ND_BLOCK);
         node->body = head.next;
