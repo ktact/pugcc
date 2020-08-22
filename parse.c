@@ -763,21 +763,23 @@ Token *tokenize() {
 
                 if (*p == '\\') {
                     switch (*++p) {
-                    case 'a': buf[len++] = '\a';
-                    case 'b': buf[len++] = '\b';
-                    case 't': buf[len++] = '\t';
-                    case 'n': buf[len++] = '\n';
-                    case 'v': buf[len++] = '\v';
-                    case 'f': buf[len++] = '\f';
-                    case 'r': buf[len++] = '\r';
-                    case 'e': buf[len++] = '\e';
-                    case '0': buf[len++] = '\0';
+                    case 'a': buf[len++] = '\a'; break;
+                    case 'b': buf[len++] = '\b'; break;
+                    case 't': buf[len++] = '\t'; break;
+                    case 'n': buf[len++] = '\n'; break;
+                    case 'v': buf[len++] = '\v'; break;
+                    case 'f': buf[len++] = '\f'; break;
+                    case 'r': buf[len++] = '\r'; break;
+                    case 'e': buf[len++] =   27; break;
+                    case '0': buf[len++] = '\0'; break;
+                    default:  buf[len++] = *p;   break;
                     }
                 } else {
                     buf[len++] = *p;
                 }
                 p++;
             }
+            buf[len++] = '\0';
             p++; // 読み出し位置を、文字列リテラルの終端の"の次の文字にセットする
 
             cur = new_token(TK_STR, cur, buf, len);
