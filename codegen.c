@@ -133,7 +133,20 @@ static void gen(Node *node) {
         for (int i = number_of_args-1; i >= 0; i--) {
             printf("  pop %s\n", _8byte_arg_regs[i]);
         }
+
+        int seq_num = label_seq_num++;
+        printf("  mov rax, rsp\n");
+        printf("  and rax, 15\n");
+        printf("  jnz .L.call.%d\n", seq_num);
+        printf("  mov rax, 0\n");
         printf("  call %s\n", node->funcname);
+        printf("  jmp .L.end.%d\n", seq_num);
+        printf(".L.call.%d:\n", seq_num);
+        printf("  sub rsp, 8\n");
+        printf("  mov rax, 0\n");
+        printf("  call %s\n", node->funcname);
+        printf("  add rsp, 8\n");
+        printf(".L.end.%d:\n", seq_num);
         printf("  push rax\n");
         return;
     }
