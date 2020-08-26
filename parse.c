@@ -107,6 +107,7 @@ Node *mul();
 Node *unary();
 Node *gnu_stmt_expr();
 Node *primary();
+Node *postfix(char *ident);
 Node *funcargs();
 bool consume(char *op);
 Token *peek(char *s);
@@ -484,7 +485,7 @@ Node *gnu_stmt_expr() {
     return node;
 }
 
-// primary = num | str | ident funcargs? | ident ("[" num "]")? | "(" expr ")" | gnu-stmt-expr
+// primary = num | str | ident funcargs? | ident postfix | "(" expr ")" | gnu-stmt-expr
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -506,28 +507,7 @@ Node *primary() {
             add_type(node);
             return node;
         } else if (consume("[")) {
-            // 配列参照
-
-            /*
-             * x[n]を*(x+n)に読み替える
-             * 例) a[3]を*(a+3)に読み替える
-             */
-            Var *array = find_var(ident);
-            if (!array) {
-                error_at(ident, "未定義の変数を参照しています");
-            }
-
-            Node *ptr_to_array   = new_node(ND_VAR);
-            ptr_to_array->type   = array->type;
-            ptr_to_array->offset = array->offset;
-            ptr_to_array->var    = array;
-            add_type(ptr_to_array);
-
-            Node *index = new_num_node(expect_number());
-
-            expect("]");
-
-            return new_unary(ND_DEREF, new_binary(ND_PTR_ADD, ptr_to_array, index));
+            return postfix(ident);
         } else {
             // 変数参照
             Node *node = new_node(ND_VAR);
@@ -574,6 +554,30 @@ Node *primary() {
 
     // そうでなければ数値のはず
     return new_num_node(expect_number());
+}
+
+// postfix = ident ("[" expr "]")*
+Node *postfix(char *ident) {
+    /*
+     * x[n]を*(x+n)に読み替える
+     * 例) a[3]を*(a+3)に読み替える
+     */
+    Var *array = find_var(ident);
+    if (!array) {
+        error_at(ident, "未定義の変数を参照しています");
+    }
+
+    Node *ptr_to_array   = new_node(ND_VAR);
+    ptr_to_array->type   = array->type;
+    ptr_to_array->offset = array->offset;
+    ptr_to_array->var    = array;
+    add_type(ptr_to_array);
+
+    Node *index = new_num_node(expect_number());
+
+    expect("]");
+
+    return new_unary(ND_DEREF, new_binary(ND_PTR_ADD, ptr_to_array, index));
 }
 
 // funcargs = "(" (assign ("," assign)*)? ")"
