@@ -134,6 +134,17 @@ static Type *basetype() {
     return type;
 }
 
+// type_suffix = ("[" num "]")*
+static Type *type_suffix(Type *base) {
+    if (!consume("["))
+        return base;
+    int array_size = expect_number();
+    expect("]");
+
+    base = type_suffix(base);
+    return array_of(base, array_size);
+}
+
 static bool is_type() {
     return (peek("int") || peek("char"));
 }
@@ -153,13 +164,9 @@ static bool is_function() {
 }
 
 static void read_global_var_decl() {
-    Type *type = basetype();
+    Type *base = basetype();
     char *var_name = consume_ident();
-    if (consume("[")) {
-        int array_size = expect_number();
-        type = array_of(type, array_size);
-        expect("]");
-    }
+    Type *type = type_suffix(base);
     expect(";");
     Var *var = new_global_var(var_name, type);
 }
@@ -333,13 +340,9 @@ Node *stmt2() {
     }
 
     if (is_type()) {
-        Type *type = basetype();
+        Type *base = basetype();
         char *var_name = expect_ident();
-        if (consume("[")) {
-            int array_size = expect_number();
-            type = array_of(type, array_size);
-            expect("]");
-        }
+        Type *type = type_suffix(base);
         Var *var = new_local_var(var_name, type);
         expect(";");
         return new_node(ND_NOP);
