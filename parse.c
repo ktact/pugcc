@@ -113,7 +113,6 @@ char *consume_ident();
 void expect(char *op);
 int expect_number();
 char *expect_ident();
-Type *expect_type();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
@@ -269,7 +268,7 @@ Node *stmt() {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
-//       | ("int" | "char") ident ("[" num "]")?";"
+//       | basetype ident ("[" num "]")?";"
 //       | expr ";"
 Node *stmt2() {
     if (consume("return")) {
@@ -696,22 +695,6 @@ char *expect_ident() {
     Token *t = token;
     token = token->next;
     return strndup(t->str, t->len);
-}
-
-// 次のトークンが型の場合、トークンを1つ読み進めてその型を返す。
-// それ以外の場合にはエラーを報告する。
-Type *expect_type() {
-    if (token->kind != TK_RESERVED ||
-        (memcmp(token->str, "int",  token->len) && memcmp(token->str, "char", token->len)))
-        error_at(token->str, "型ではありません");
-
-    Token *t = token;
-    token = token->next;
-    if (memcmp(t->str, "int", t->len)) {
-        return int_type;
-    } else if (memcmp(t->str, "char", t->len)) {
-        return char_type;
-    }
 }
 
 bool at_eof() {
