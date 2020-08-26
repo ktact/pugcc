@@ -117,8 +117,8 @@ Type *expect_type();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// type = ("int" | "char") "*"?
-static Type *read_type() {
+// basetype = ("char" | "int") "*"*
+static Type *basetype() {
     Type *type = NULL;
     if (consume("int")) {
         type = int_type;
@@ -130,7 +130,18 @@ static Type *read_type() {
 
     while (consume("*"))
         type = pointer_to(type);
+
     return type;
+}
+
+static bool is_type() {
+    Token *tok = token;
+
+    bool is_type = (consume("int") || consume("char"));
+
+    token = tok;
+
+    return is_type;
 }
 
 static bool is_function() {
@@ -138,7 +149,7 @@ static bool is_function() {
     Token *tok = token;
 
     // トークンを先読みして型、識別子、（であれば関数宣言であると判断する
-    read_type();
+    basetype();
     bool is_function = consume_ident() && consume("(");
 
     // トークンの読み出し位置を元に戻す
@@ -148,7 +159,7 @@ static bool is_function() {
 }
 
 static void read_global_var_decl() {
-    Type *type = read_type();
+    Type *type = basetype();
     char *var_name = consume_ident();
     if (consume("[")) {
         int array_size = expect_number();
@@ -182,7 +193,7 @@ Program *program() {
 }
 
 static VarList *read_func_param() {
-    Type *type = read_type();
+    Type *type = basetype();
     char *name = expect_ident();
 
     VarList *vl = calloc(1, sizeof(VarList));
@@ -209,7 +220,7 @@ static VarList *read_func_params() {
 
 // func_decl = type ident "(" params? ")" "{" stmt* "}"
 Function *func_decl() {
-    Type *type = read_type();
+    Type *type = basetype();
     char *func_name = consume_ident();
     if (func_name) {
         Function *f = calloc(1, sizeof(Function));
@@ -258,7 +269,7 @@ Node *stmt() {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
-//       | "int" ident ("[" num "]")?";"
+//       | ("int" | "char") ident ("[" num "]")?";"
 //       | expr ";"
 Node *stmt2() {
     if (consume("return")) {
@@ -327,29 +338,22 @@ Node *stmt2() {
         return node;
     }
 
-    Type *type = NULL;
-    if (consume("int")) {
-        type = int_type;
-    } else if (consume("char")) {
-        type = char_type;
-    } else {
-        Node *node = expr();
+    if (is_type()) {
+        Type *type = basetype();
+        char *var_name = expect_ident();
+        if (consume("[")) {
+            int array_size = expect_number();
+            type = array_of(type, array_size);
+            expect("]");
+        }
+        Var *var = new_local_var(var_name, type);
         expect(";");
-        return node;
-   }
-
-    while (consume("*"))
-        type = pointer_to(type);
-
-    char *var_name = expect_ident();
-    if (consume("[")) {
-        int array_size = expect_number();
-        type = array_of(type, array_size);
-        expect("]");
+        return new_node(ND_NOP);
     }
-    Var *var = new_local_var(var_name, type);
+
+    Node *node = expr();
     expect(";");
-    return new_node(ND_NOP);
+    return node;
 }
 
 // expr = assign
