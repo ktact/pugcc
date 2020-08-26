@@ -109,6 +109,7 @@ Node *gnu_stmt_expr();
 Node *primary();
 Node *funcargs();
 bool consume(char *op);
+Token *peek(char *s);
 char *consume_ident();
 void expect(char *op);
 int expect_number();
@@ -134,13 +135,7 @@ static Type *basetype() {
 }
 
 static bool is_type() {
-    Token *tok = token;
-
-    bool is_type = (consume("int") || consume("char"));
-
-    token = tok;
-
-    return is_type;
+    return (peek("int") || peek("char"));
 }
 
 static bool is_function() {
@@ -656,6 +651,15 @@ bool consume(char *op) {
         return false;
     token = token->next;
     return true;
+}
+
+// 次のトークンが期待する記号の場合にはそのトークンを返す。
+// それ以外の場合にはNULLを返す。
+Token *peek(char *s) {
+    if (token->kind != TK_RESERVED || strlen(s) != token->len ||
+        memcmp(token->str, s, token->len))
+        return NULL;
+    return token;
 }
 
 // 次のトークンが識別子であればトークンを1つ読み進めそのトークンの文字列を返す。
