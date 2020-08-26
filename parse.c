@@ -535,18 +535,7 @@ Node *primary() {
         var->content_len = literal->len;
 
         if (consume("[")) {
-            // 配列参照
-            Node *ptr_to_array   = new_node(ND_VAR);
-            ptr_to_array->type   = var->type;
-            ptr_to_array->offset = var->offset;
-            ptr_to_array->var    = var;
-            add_type(ptr_to_array);
-
-            Node *index = new_num_node(expect_number());
-
-            expect("]");
-
-            return new_unary(ND_DEREF, new_binary(ND_PTR_ADD, ptr_to_array, index));
+            return postfix(var->name);
         }
 
         return new_var_node(var);
@@ -574,6 +563,7 @@ Node *postfix(char *ident) {
     add_type(ptr_to_array);
 
     Node *index = new_num_node(expect_number());
+    Node *exp = new_binary(ND_PTR_ADD, ptr_to_array, index);
 
     expect("]");
 
