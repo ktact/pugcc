@@ -80,5 +80,12 @@ void add_type(Node *node) {
         else
             node->type = int_type;
         break;
+    case ND_GNU_STMT_EXPR: {
+            Node *last = node->body;
+            while (last->next)
+                last = last->next;
+            node->type = last->type;
+        }
+        break;
     }
 }

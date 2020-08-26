@@ -68,29 +68,30 @@ struct VarList {
 
 // 抽象構文木のノードの種類
 typedef enum {
-    ND_ADD,      // num + num
-    ND_SUB,      // num - num
-    ND_PTR_ADD,  // ptr + num | num + ptr
-    ND_PTR_SUB,  // ptr - num | num - ptr
-    ND_PTR_DIFF, // ptr - ptr
-    ND_MUL,      // *
-    ND_DIV,      // /
-    ND_ASSIGN,   // =
-    ND_VAR,      // Local/Global Variable
-    ND_EQ,       // ==
-    ND_NE,       // !=
-    ND_LT,       // <
-    ND_LE,       // <=
-    ND_NUM,      // Integer
-    ND_IF,       // if
-    ND_WHILE,    // while
-    ND_FOR,      // for
-    ND_BLOCK,    // {...}
-    ND_FUNCCALL, // function()
-    ND_ADDR,     // &x
-    ND_DEREF,    // *x
-    ND_RETURN,   // return
-    ND_NOP,      // Empty statement
+    ND_ADD,           // num + num
+    ND_SUB,           // num - num
+    ND_PTR_ADD,       // ptr + num | num + ptr
+    ND_PTR_SUB,       // ptr - num | num - ptr
+    ND_PTR_DIFF,      // ptr - ptr
+    ND_MUL,           // *
+    ND_DIV,           // /
+    ND_ASSIGN,        // =
+    ND_VAR,           // Local/Global Variable
+    ND_EQ,            // ==
+    ND_NE,            // !=
+    ND_LT,            // <
+    ND_LE,            // <=
+    ND_NUM,           // Integer
+    ND_IF,            // if
+    ND_WHILE,         // while
+    ND_FOR,           // for
+    ND_BLOCK,         // {...}
+    ND_FUNCCALL,      // function()
+    ND_GNU_STMT_EXPR, // GNU statement expression
+    ND_ADDR,          // &x
+    ND_DEREF,         // *x
+    ND_RETURN,        // return
+    ND_NOP,           // Empty statement
 } NodeKind;
 
 typedef struct Node Node;

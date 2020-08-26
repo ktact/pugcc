@@ -105,6 +105,7 @@ Node *relational();
 Node *add();
 Node *mul();
 Node *unary();
+Node *gnu_stmt_expr();
 Node *primary();
 Node *funcargs();
 bool consume(char *op);
@@ -467,10 +468,28 @@ Node *unary() {
     return primary();
 }
 
-// primary = num | str | ident funcargs? | ident ("[" num "]")? | "(" expr ")"
+// gnu-stmt-expr = "(" "{" stmt stmt* "}" ")"
+Node *gnu_stmt_expr() {
+    Node *node = new_node(ND_GNU_STMT_EXPR);
+    node->body = stmt();
+    Node *cur = node->body;
+
+    while (!consume("}")) {
+        cur->next = stmt();
+        cur = cur->next;
+    }
+    expect(")");
+
+    return node;
+}
+
+// primary = num | str | ident funcargs? | ident ("[" num "]")? | "(" expr ")" | gnu-stmt-expr
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if (consume("(")) {
+        if (consume("{"))
+            return gnu_stmt_expr();
+
         Node *node = expr();
         expect(")");
         return node;
