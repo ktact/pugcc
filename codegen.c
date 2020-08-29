@@ -37,16 +37,23 @@ static void gen_addr(Var *var) {
 }
 
 static void gen_lval(Node *node) {
-    if (node->kind != ND_VAR && node->kind != ND_DEREF)
+    if (node->kind != ND_VAR && node->kind != ND_MEMBER && node->kind != ND_DEREF)
         error("代入の左辺値が変数ではありません");
 
-    if (node->kind == ND_DEREF) {
+    switch (node->kind) {
+    case ND_VAR:
+        // 左辺値のアドレスをスタックに積む
+        gen_addr(node->var);
+        break;
+    case ND_MEMBER:
+        // 左辺値のアドレスをスタックに積む
+        printf("  lea rax, [rbp-%d]\n", node->member->offset);
+        printf("  push rax\n");
+        break;
+    case ND_DEREF:
         // アドレスを計算しスタックに積む
         gen(node->lhs);
-    } else {
-        // 左辺値のアドレスをスタックに積む
-        Var *var = node->var;
-        gen_addr(var);
+        break;
     }
 }
 
@@ -59,6 +66,13 @@ static void gen(Node *node) {
         gen_lval(node);
 
         if (!is_array(node) && node->var->is_local)
+            load(node->type);
+
+        return;
+    case ND_MEMBER:
+        gen_lval(node);
+
+        if (!is_array(node) && node->lhs->var->is_local)
             load(node->type);
 
         return;

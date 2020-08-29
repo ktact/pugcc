@@ -187,4 +187,19 @@ assert  2 'int main() { return ({0; 1; 2; }); }'
 assert  1 'int main() { ({ 0; return 1; 2; }); return 3; }'
 assert  3 'int main() { return ({ int x; x=3; x; }); }'
 
+# メンバがすべてint型である構造体のメンバ参照に関するテスト
+assert  1 "int main() { struct {int a; int b;} x; x.a=1; x.b=2; return x.a; }"
+assert  2 "int main() { struct {int a; int b;} x; x.a=1; x.b=2; return x.b; }"
+# メンバに複数の型が存在する構造体のメンバ参照に関するテスト
+assert  1 "int main() { struct {char a; int b; char c;} x; x.a=1; x.b=2; x.c=3; return x.a; }"
+assert  2 "int main() { struct {char a; int b; char c;} x; x.a=1; x.b=2; x.c=3; return x.b; }"
+assert  3 "int main() { struct {char a; int b; char c;} x; x.a=1; x.b=2; x.c=3; return x.c; }"
+# 構造体に対するsizeofに関するテスト
+assert  4 "int main() { struct {int a;}          x; return sizeof(x.a); }"
+assert 16 "int main() { struct {int a;}          x; return sizeof(x); }"
+assert 32 "int main() { struct {int a; int b;}   x; return sizeof(x); }"
+assert 32 "int main() { struct {int a[3];}       x; return sizeof(x); }"
+assert 32 "int main() { struct {char a; char b;} x; return sizeof(x); }"
+assert 32 "int main() { struct {char a; int b;}  x; return sizeof(x); }"
+
 echo OK

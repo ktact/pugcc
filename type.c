@@ -59,6 +59,9 @@ void add_type(Node *node) {
     case ND_VAR:
         node->type = node->var->type;
         break;
+    case ND_MEMBER:
+        node->type = node->member->type;
+        break;
     case ND_FUNCCALL:
     case ND_NUM:
         node->type = int_type;

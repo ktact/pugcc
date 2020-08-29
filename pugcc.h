@@ -28,13 +28,23 @@ struct Token {
 Token *token;
 
 typedef struct Type Type;
+typedef struct Member Member;
 
 // 型を表す型
 struct Type {
-    enum { INT, CHAR, PTR, ARRAY } kind;
+    enum { INT, CHAR, PTR, ARRAY, STRUCT } kind;
     int size;
     int array_size;
     struct Type *pointer_to;
+    Member *members;
+};
+
+// 構造体のメンバを表す型
+struct Member {
+    char *name;
+    Type *type;
+    int offset;
+    Member *next;
 };
 
 // int型の宣言
@@ -88,6 +98,7 @@ typedef enum {
     ND_BLOCK,         // {...}
     ND_FUNCCALL,      // function()
     ND_GNU_STMT_EXPR, // GNU statement expression
+    ND_MEMBER,        // . (struct member access)
     ND_ADDR,          // &x
     ND_DEREF,         // *x
     ND_RETURN,        // return
@@ -107,6 +118,7 @@ struct Node {
     Node *init;
     Node *inc;
     Node *body;
+    Member *member; // 構造体のメンバへのアクセス
     Node *args;
     Node *next;
     int val;       // kindがND_NUMの場合のみ使う

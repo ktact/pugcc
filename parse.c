@@ -14,21 +14,18 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = new_node(kind);
     node->lhs  = lhs;
     node->rhs  = rhs;
-    add_type(node);
     return node;
 }
 
 Node *new_unary(NodeKind kind, Node *expr) {
     Node *node = new_node(kind);
     node->lhs = expr;
-    add_type(node);
     return node;
 }
 
 Node *new_num_node(int val) {
     Node *node = new_node(ND_NUM);
     node->val  = val;
-    add_type(node);
     return node;
 }
 
@@ -84,7 +81,6 @@ static Var *find_var(char *name) {
 static Node *new_var_node(Var *var) {
     Node *node = new_node(ND_VAR);
     node->var = var;
-    add_type(node);
     return node;
 }
 
@@ -95,6 +91,8 @@ static char *new_label() {
     return strndup(buf, 20);
 }
 
+static Type *struct_decl();
+static Member *struct_member();
 Function *func_decl();
 Node *stmt();
 Node *stmt2();
@@ -118,13 +116,15 @@ char *expect_ident();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// basetype = ("char" | "int") "*"*
+// basetype = ("char" | "int" | struct_decl) "*"*
 static Type *basetype() {
     Type *type = NULL;
     if (consume("int")) {
         type = int_type;
     } else if (consume("char")) {
         type = char_type;
+    } else if (peek("struct")) {
+        type = struct_decl();
     } else {
         error_at(token->str, "型ではありません");
     }
@@ -146,8 +146,65 @@ static Type *type_suffix(Type *base) {
     return array_of(base, array_size);
 }
 
+// struct_decl = "struct" "{" struct_member "}"
+static Type *struct_decl() {
+    expect("struct");
+    expect("{");
+
+    Member head = {};
+    Member *cur = &head;
+
+    while (!consume("}")) {
+        cur->next = struct_member();
+        cur = cur->next;
+    }
+
+    Type *type = calloc(1, sizeof(Type));
+    type->kind = STRUCT;
+    type->members = head.next;
+
+    int offset = 0;
+    for (Member *member = type->members; member; member = member->next) {
+        member->offset = offset;
+        offset += member->type->size + (16 - member->type->size % 16);
+    }
+    type->size = offset;
+
+    return type;
+}
+
+// struct_member = basetype ident ("[" num "]")* ";"
+static Member *struct_member() {
+    Member *member = calloc(1, sizeof(Member));
+    member->type = basetype();
+    member->name = expect_ident();
+    member->type = type_suffix(member->type);
+    expect(";");
+
+    return member;
+}
+
+static Member *find_member(Type *type, char *name) {
+    for (Member *member = type->members; member; member = member->next)
+        if (!strcmp(member->name, name)) {
+            return member;
+        }
+    return NULL;
+}
+
+static Node *struct_ref(Node *lhs) {
+    add_type(lhs);
+
+    Member *member = find_member(lhs->type, expect_ident());
+
+    Node *node = new_unary(ND_MEMBER, lhs);
+    node->member = member;
+
+    return node;
+}
+
 static bool is_type() {
-    return (peek("int") || peek("char"));
+    return (peek("int") || peek("char") || peek("struct"));
 }
 
 static bool is_function() {
@@ -456,6 +513,8 @@ Node *unary() {
             return new_num_node(8);
         case ARRAY:
             return new_num_node(4 * node->type->array_size);
+        case STRUCT:
+            return new_num_node(node->var->offset);
         }
     }
 
@@ -488,17 +547,22 @@ Node *gnu_stmt_expr() {
 // postfix = primary ("[" expr "]")*
 Node *postfix() {
     Node *node = primary();
-     /*
-     * x[n]を*(x+n)に読み替える
-     * 例) a[3]を*(a+3)に読み替える
-     */
+
     if (consume("[")) {
-	Node *index = new_num_node(expect_number());
+        /*
+         * x[n]を*(x+n)に読み替える
+         * 例) a[3]を*(a+3)に読み替える
+         */
+        Node *index = new_num_node(expect_number());
         Node *expr = new_binary(ND_PTR_ADD, node, index);
 
         expect("]");
 
         node = new_unary(ND_DEREF, expr);
+    }
+
+    if (consume(".")) {
+        node = struct_ref(node);
     }
 
     return node;
@@ -703,7 +767,7 @@ static bool is_alnum(char c) {
 }
 
 static int reserved_word(char *p) {
-    char *keywords[] = { "return", "if", "else", "while", "for", "int", "char", "sizeof" };
+    char *keywords[] = { "return", "if", "else", "while", "for", "int", "char", "struct", "sizeof" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))
@@ -804,7 +868,7 @@ Token *tokenize() {
             continue;
         }
 
-        if (strchr("+-*/&(){}<>=;,[]", *p)) {
+        if (strchr("+-*/&(){}<>=;,[].", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
