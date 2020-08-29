@@ -165,6 +165,17 @@ Program *program();
 
 // トークナイズ関数の宣言
 extern Token *tokenize();
+extern Token *new_token(TokenKind kind, Token *cur, char *str, int len);
+extern void error(char *fmt, ...);
+extern void error_at(char *loc, char *fmt, ...);
+extern bool consume(char *op);
+extern Token *peek(char *s);
+extern char *consume_ident();
+extern void expect(char *op);
+extern int expect_number();
+extern char *expect_ident();
+extern bool at_eof();
+extern void error_at(char *loc, char *fmt, ...);
 
 // コード生成関数の宣言
 extern void codegen(Program *program);
