@@ -24,7 +24,6 @@ static void store(Type *type) {
         printf("  mov [rax], dil\n");
     else
         printf("  mov [rax], rdi\n");
-    printf("  push rdi\n");
 }
 
 static void gen_addr(Var *var) {
