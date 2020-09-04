@@ -514,7 +514,7 @@ Node *unary() {
         case ARRAY:
             return new_num_node(4 * node->type->array_size);
         case STRUCT:
-            return new_num_node(node->var->offset);
+            return new_num_node(node->var->type->size);
         }
     }
 
