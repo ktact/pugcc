@@ -97,6 +97,7 @@ typedef enum {
     ND_FOR,           // for
     ND_BLOCK,         // {...}
     ND_FUNCCALL,      // function()
+    ND_EXPR_STMT,     // expression statement
     ND_GNU_STMT_EXPR, // GNU statement expression
     ND_MEMBER,        // . (struct member access)
     ND_ADDR,          // &x

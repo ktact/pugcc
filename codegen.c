@@ -24,6 +24,7 @@ static void store(Type *type) {
         printf("  mov [rax], dil\n");
     else
         printf("  mov [rax], rdi\n");
+    printf("  push rdi\n");
 }
 
 static void gen_addr(Var *var) {
@@ -67,6 +68,10 @@ static void gen(Node *node) {
         if (!is_array(node) && node->var->is_local)
             load(node->type);
 
+        return;
+    case ND_EXPR_STMT:
+        gen(node->lhs);
+        printf("  add rsp, 8\n");
         return;
     case ND_MEMBER:
         gen_lval(node);

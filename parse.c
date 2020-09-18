@@ -364,7 +364,7 @@ Node *stmt2() {
         Node *node = new_node(ND_FOR);
         expect("(");
         if (!consume(";")) {
-            node->init = expr();
+            node->init = new_unary(ND_EXPR_STMT, expr());
             expect(";");
         }
         if (!consume(";")) {
@@ -372,7 +372,7 @@ Node *stmt2() {
             expect(";");
         }
         if (!consume(")")) {
-            node->inc = expr();
+            node->inc = new_unary(ND_EXPR_STMT, expr());
             expect(")");
         }
         node->then = stmt();
@@ -406,7 +406,7 @@ Node *stmt2() {
         return new_node(ND_NOP);
     }
 
-    Node *node = expr();
+    Node *node = new_unary(ND_EXPR_STMT, expr());
     expect(";");
     return node;
 }
@@ -541,6 +541,7 @@ Node *gnu_stmt_expr() {
     }
     expect(")");
 
+    memcpy(cur, cur->lhs, sizeof(Node));
     return node;
 }
 
