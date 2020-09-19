@@ -206,14 +206,14 @@ static void gen(Node *node) {
         if(is_array(node->lhs))
             printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
         else
-            printf("  imul rdi, 4\n");
+            printf("  imul rdi, 8\n");
         printf("  add rax, rdi\n");
         break;
     case ND_PTR_SUB:
         if (is_array(node->lhs))
             printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
         else
-            printf("  imul rdi, 4\n");
+            printf("  imul rdi, 8\n");
         printf("  sub rax, rdi\n");
         break;
     case ND_PTR_DIFF:

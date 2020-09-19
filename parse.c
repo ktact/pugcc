@@ -50,7 +50,7 @@ static Var *new_local_var(char *name, Type *type) {
     VarList *vl = calloc(1, sizeof(VarList));
     vl->var = var;
     vl->next = locals;
-    var->offset = type->size + (type->size % 16);
+    var->offset = type->size;
     if (locals)
         var->offset += locals->var->offset;
     locals = vl;
@@ -166,7 +166,8 @@ static Type *struct_decl() {
     int offset = 0;
     for (Member *member = type->members; member; member = member->next) {
         member->offset = offset;
-        offset += member->type->size + (16 - member->type->size % 16);
+        fprintf(stderr, "%s->type->size(%d)\n", member->name, member->type->size);
+        offset += member->type->size;
     }
     type->size = offset;
 
@@ -506,13 +507,13 @@ Node *unary() {
         add_type(node);
         switch (node->type->kind) {
         case INT:
-            return new_num_node(4);
+            return new_num_node(8);
         case CHAR:
             return new_num_node(1);
         case PTR:
             return new_num_node(8);
         case ARRAY:
-            return new_num_node(4 * node->type->array_size);
+            return new_num_node(8 * node->type->array_size);
         case STRUCT:
             return new_num_node(node->var->type->size);
         }

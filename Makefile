@@ -8,7 +8,9 @@ pugcc: $(OBJS)
 $(OBJS): pugcc.h
 
 test: pugcc
-	./test.sh
+	./pugcc tests > tmp.s
+	gcc -static -g -o tmp tmp.s
+	./tmp
 
 clean:
 	rm -f pugcc *.o *.~ tmp*
