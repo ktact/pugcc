@@ -75,9 +75,7 @@ static void gen(Node *node) {
         return;
     case ND_MEMBER:
         gen_lval(node);
-
-        if (!is_array(node) && node->lhs->var->is_local)
-            load(node->type);
+        load(node->type);
 
         return;
     case ND_ASSIGN:

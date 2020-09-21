@@ -600,7 +600,7 @@ Node *gnu_stmt_expr() {
     return node;
 }
 
-// postfix = primary ("[" expr "]" | "." ident)
+// postfix = primary ("[" expr "]" | "." ident | "->" ident)
 Node *postfix() {
     Node *node = primary();
 
@@ -618,6 +618,12 @@ Node *postfix() {
     }
 
     if (consume(".")) {
+        node = struct_ref(node);
+    }
+
+    if (consume("->")) {
+        // x->y is short short for (*x).y
+        node = new_unary(ND_DEREF, node);
         node = struct_ref(node);
     }
 
