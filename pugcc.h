@@ -40,6 +40,13 @@ struct Type {
     Member *members;
 };
 
+typedef struct TagList TagList;
+struct TagList {
+    TagList *next;
+    char *name;
+    Type *type;
+};
+
 // 構造体のメンバを表す型
 struct Member {
     char *name;
@@ -76,6 +83,11 @@ struct VarList {
     Var *var;
     VarList *next;
 };
+
+typedef struct {
+    VarList *var_scope;
+    TagList *tag_scope;
+} Scope;
 
 // 抽象構文木のノードの種類
 typedef enum {

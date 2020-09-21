@@ -2,7 +2,21 @@
 
 static VarList *locals  = NULL;
 static VarList *globals = NULL;
-static VarList *scope   = NULL;
+
+static VarList *var_scope = NULL;
+static TagList *tag_scope = NULL;
+
+static Scope *enter_scope(void) {
+    Scope *sc = calloc(1, sizeof(Scope));
+    sc->var_scope = var_scope;
+    sc->tag_scope = tag_scope;
+    return sc;
+}
+
+static void leave_scope(Scope *sc) {
+    var_scope = sc->var_scope;
+    tag_scope = sc->tag_scope;
+}
 
 Node *new_node(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
@@ -38,8 +52,8 @@ static Var *new_var(char *name, Type *type, bool is_local) {
 
     VarList *sc = calloc(1, sizeof(VarList));
     sc->var = var;
-    sc->next = scope;
-    scope = sc;
+    sc->next = var_scope;
+    var_scope = sc;
 
     return var;
 }
@@ -70,11 +84,18 @@ static Var *new_global_var(char *name, Type *type) {
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 static Var *find_var(char *name) {
-    for (VarList *vl = scope; vl; vl = vl->next) {
+    for (VarList *vl = var_scope; vl; vl = vl->next) {
         Var *var = vl->var;
         if (var->len == strlen(name) && !memcmp(name, var->name, var->len))
             return var;
     }
+    return NULL;
+}
+
+static TagList *find_tag_by(char *name) {
+    for (TagList *tag = tag_scope; tag; tag = tag->next)
+        if (strlen(tag->name) == strlen(name) && !memcmp(name, tag->name, strlen(tag->name)))
+            return tag;
     return NULL;
 }
 
@@ -146,9 +167,26 @@ static Type *type_suffix(Type *base) {
     return array_of(base, array_size);
 }
 
-// struct_decl = "struct" "{" struct_member "}"
+static void push_tag_to_scope(char *name, Type *type) {
+    TagList *tag = calloc(1, sizeof(TagList));
+    tag->next = tag_scope;
+    tag->name = strndup(name, strlen(name));
+    tag->type = type;
+    tag_scope = tag;
+}
+
+// struct_decl = "struct" ident
+//             | "struct" ident? "{" struct_member "}"
 static Type *struct_decl() {
     expect("struct");
+
+    // 構造体名を読む
+    char *tag_name = consume_ident();
+    if (tag_name && !peek("{")) {
+        TagList *tag = find_tag_by(tag_name);
+        return tag->type;
+    }
+
     expect("{");
 
     Member head = {};
@@ -173,6 +211,9 @@ static Type *struct_decl() {
             type->align = member->type->align;
     }
     type->size = align_to(offset, type->align);
+
+    if (tag_name)
+        push_tag_to_scope(tag_name, type);
 
     return type;
 }
@@ -292,7 +333,7 @@ Function *func_decl() {
 
         expect("(");
 
-        VarList *sc = scope;
+        Scope *sc = enter_scope();
         f->params = read_func_params();
         expect("{");
 
@@ -303,7 +344,7 @@ Function *func_decl() {
             cur->next = stmt();
             cur = cur->next;
         }
-        scope = sc;
+        leave_scope(sc);
 
         f->body = head.next;
 
@@ -390,12 +431,12 @@ Node *stmt2() {
         Node head = {};
         Node *cur = &head;
 
-        VarList *sc = scope;
+        Scope *sc = enter_scope();
         while (!consume("}")) {
             cur->next = stmt();
             cur = cur->next;
         }
-        scope = sc;
+        leave_scope(sc);
 
         Node *node = new_node(ND_BLOCK);
         node->body = head.next;
@@ -405,6 +446,10 @@ Node *stmt2() {
 
     if (is_type()) {
         Type *base = basetype();
+        if (consume(";")) {
+            return new_node(ND_NOP);
+        }
+
         char *var_name = expect_ident();
         Type *type = type_suffix(base);
         Var *var = new_local_var(var_name, type);
@@ -537,6 +582,8 @@ Node *unary() {
 
 // gnu-stmt-expr = "(" "{" stmt stmt* "}" ")"
 Node *gnu_stmt_expr() {
+    Scope *sc = enter_scope();
+
     Node *node = new_node(ND_GNU_STMT_EXPR);
     node->body = stmt();
     Node *cur = node->body;
@@ -546,6 +593,8 @@ Node *gnu_stmt_expr() {
         cur = cur->next;
     }
     expect(")");
+
+    leave_scope(sc);
 
     memcpy(cur, cur->lhs, sizeof(Node));
     return node;
