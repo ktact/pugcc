@@ -34,6 +34,7 @@ typedef struct Member Member;
 struct Type {
     enum { INT, CHAR, PTR, ARRAY, STRUCT } kind;
     int size;
+    int align;
     int array_size;
     struct Type *pointer_to;
     Member *members;

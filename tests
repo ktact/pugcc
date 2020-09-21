@@ -175,23 +175,24 @@ int main() {
     assert(1, ({ struct { int a; int b; } x; x.a=1; x.b=2; x.a; }), "struct { int a; int b; } x; x.a=1; x.b=2; x.a");
     assert(2, ({ struct { int a; int b; } x; x.a=1; x.b=2; x.b; }), "struct { int a; int b; } x; x.a=1; x.b=2; x.b");
 
-    //assert(1, ({ struct { char a; int b; char c; } x; x.a=1; x.b=2; x.c=3; x.a; }), "struct { char a; int b; char c; } x; x.a=1; x.b=2; x.c=3; x.a;");
+    assert(1, ({ struct { char a; int b; char c; } x; x.a=1; x.b=2; x.c=3; x.a; }), "struct { char a; int b; char c; } x; x.a=1; x.b=2; x.c=3; x.a;");
     assert(2, ({ struct { char a; int b; char c; } x; x.a=1; x.b=2; x.c=3; x.b; }), "struct { char a; int b; char c; } x; x.a=1; x.b=2; x.c=3; x.b;");
     assert(3, ({ struct { char a; int b; char c; } x; x.a=1; x.b=2; x.c=3; x.c; }), "struct { char a; int b; char c; } x; x.a=1; x.b=2; x.c=3; x.c;");
 
-    assert( 1, ({ struct { char a; }         x; sizeof(x.a);    }), "struct { char a; }         x; sizeof(x.a);   ");
-    assert( 8, ({ struct { int  a; }         x; sizeof(x.a);    }), "struct { int  a; }         x; sizeof(x.a);   ");
-    assert( 8, ({ struct { int  a; }         x; sizeof(x);      }), "struct { int  a; }         x; sizeof(x);     ");
-    assert( 8, ({ struct { int  a; int b; }  x; sizeof(x.a);    }), "struct { int  a; int b; }  x; sizeof(x.a);   ");
-    assert( 8, ({ struct { int  a; int b; }  x; sizeof(x.b);    }), "struct { int  a; int b; }  x; sizeof(x.b);   ");
-    assert(16, ({ struct { int  a; int b; }  x; sizeof(x);      }), "struct { int  a; int b; }  x; sizeof(x);     ");
-    assert(24, ({ struct { int  a[3]; }      x; sizeof(x);      }), "struct { int  a[3]; }      x; sizeof(x);     ");
-    assert( 1, ({ struct { char a; char b; } x; sizeof(x.a);    }), "struct { char a; char b; } x; sizeof(x.a);   ");
-    assert( 1, ({ struct { char a; char b; } x; sizeof(x.b);    }), "struct { char a; char b; } x; sizeof(x.b);   ");
-    assert( 2, ({ struct { char a; char b; } x; sizeof(x);      }), "struct { char a; char b; } x; sizeof(x);     ");
-    assert( 1, ({ struct { char a; int b; }  x; sizeof(x.a);    }), "struct { char a; int b; }  x; sizeof(x.a);   ");
-    assert( 8, ({ struct { char a; int b; }  x; sizeof(x.b);    }), "struct { char a; int b; }  x; sizeof(x.b);   ");
-    assert( 9, ({ struct { char a; int b; }  x; sizeof(x);      }), "struct { char a; int b; }  x; sizeof(x);     ");
+    assert( 1, ({ struct { char a; }          x; sizeof(x.a);    }), "struct { char a; }          x; sizeof(x.a);   ");
+    assert( 8, ({ struct { int  a; }          x; sizeof(x.a);    }), "struct { int  a; }          x; sizeof(x.a);   ");
+    assert( 8, ({ struct { int  a; }          x; sizeof(x);      }), "struct { int  a; }          x; sizeof(x);     ");
+    assert( 8, ({ struct { int  a; int  b; }  x; sizeof(x.a);    }), "struct { int  a; int  b; }  x; sizeof(x.a);   ");
+    assert( 8, ({ struct { int  a; int  b; }  x; sizeof(x.b);    }), "struct { int  a; int  b; }  x; sizeof(x.b);   ");
+    assert(16, ({ struct { int  a; int  b; }  x; sizeof(x);      }), "struct { int  a; int  b; }  x; sizeof(x);     ");
+    assert(24, ({ struct { int  a[3]; }       x; sizeof(x);      }), "struct { int  a[3]; }       x; sizeof(x);     ");
+    assert( 1, ({ struct { char a; char b; }  x; sizeof(x.a);    }), "struct { char a; char b; }  x; sizeof(x.a);   ");
+    assert( 1, ({ struct { char a; char b; }  x; sizeof(x.b);    }), "struct { char a; char b; }  x; sizeof(x.b);   ");
+    assert( 2, ({ struct { char a; char b; }  x; sizeof(x);      }), "struct { char a; char b; }  x; sizeof(x);     ");
+    assert( 1, ({ struct { char a; int  b; }  x; sizeof(x.a);    }), "struct { char a; int  b; }  x; sizeof(x.a);   ");
+    assert( 8, ({ struct { char a; int  b; }  x; sizeof(x.b);    }), "struct { char a; int  b; }  x; sizeof(x.b);   ");
+    assert(16, ({ struct { char a; int  b; }  x; sizeof(x);      }), "struct { char a; int  b; }  x; sizeof(x);     ");
+    assert(16, ({ struct { int  a; char b; }  x; sizeof(x);      }), "struct { char a; int  b; }  x; sizeof(x);     ");
 
     printf("OK\n");
 

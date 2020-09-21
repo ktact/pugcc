@@ -165,11 +165,14 @@ static Type *struct_decl() {
 
     int offset = 0;
     for (Member *member = type->members; member; member = member->next) {
+        offset = align_to(offset, member->type->align);
         member->offset = offset;
-        fprintf(stderr, "%s->type->size(%d)\n", member->name, member->type->size);
         offset += member->type->size;
+
+        if (type->align < member->type->align)
+            type->align = member->type->align;
     }
-    type->size = offset;
+    type->size = align_to(offset, type->align);
 
     return type;
 }
@@ -546,7 +549,7 @@ Node *gnu_stmt_expr() {
     return node;
 }
 
-// postfix = primary ("[" expr "]")*
+// postfix = primary ("[" expr "]" | "." ident)
 Node *postfix() {
     Node *node = primary();
 

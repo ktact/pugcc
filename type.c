@@ -1,12 +1,17 @@
 #include "pugcc.h"
 
-Type *int_type  = &(Type){ INT,  8 };
-Type *char_type = &(Type){ CHAR, 1 };
+Type *int_type  = &(Type){ INT,  8, 8 };
+Type *char_type = &(Type){ CHAR, 1, 1  };
+
+int align_to(int n, int align) {
+    return (n + align -1) & ~(align - 1);
+}
 
 Type *pointer_to(Type *base_type) {
     Type *ptr = calloc(1, sizeof(Type));
     ptr->kind = PTR;
     ptr->size  = 8;
+    ptr->align = 8;
     ptr->pointer_to = base_type;
     return ptr;
 }
@@ -16,6 +21,7 @@ Type *array_of(Type *type, int len) {
     array->kind       = ARRAY;
     array->array_size = len;
     array->size       = type->size * array->array_size;
+    array->align      = type->align;
     return array;
 }
 
