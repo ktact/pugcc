@@ -99,6 +99,10 @@ typedef enum {
     ND_MUL,           // *
     ND_DIV,           // /
     ND_ASSIGN,        // =
+    ND_PRE_INC,       // ++x
+    ND_PRE_DEC,       // --x
+    ND_POST_INC,      // x++
+    ND_POST_DEC,      // x--
     ND_VAR,           // Local/Global Variable
     ND_EQ,            // ==
     ND_NE,            // !=

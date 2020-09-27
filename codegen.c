@@ -27,6 +27,18 @@ static void store(Type *type) {
     printf("  push rdi\n");
 }
 
+static void inc(Type *type) {
+    printf("  pop rax\n");
+    printf("  add rax, %d\n", type->kind == PTR ? type->pointer_to->size : 1);
+    printf("  push rax\n");
+}
+
+static void dec(Type *type) {
+    printf("  pop rax\n");
+    printf("  sub rax, %d\n", type->kind == PTR ? type->pointer_to->size : 1);
+    printf("  push rax\n");
+}
+
 static void gen_addr(Var *var) {
     if (var->is_local) {
         printf("  lea rax, [rbp-%d]\n", var->offset);
@@ -82,6 +94,36 @@ static void gen(Node *node) {
         gen_lval(node->lhs);
         gen(node->rhs);
         store(node->type);
+        return;
+    case ND_PRE_INC:
+        gen_lval(node->lhs);
+        printf("  push [rsp]\n");
+        load(node->type);
+        inc(node->type);
+        store(node->type);
+        return;
+    case ND_PRE_DEC:
+        gen_lval(node->lhs);
+        printf("  push [rsp]\n");
+        load(node->type);
+        dec(node->type);
+        store(node->type);
+        return;
+    case ND_POST_INC:
+        gen_lval(node->lhs);
+        printf("  push [rsp]\n");
+        load(node->type);
+        inc(node->type);
+        store(node->type);
+        dec(node->type);
+        return;
+    case ND_POST_DEC:
+        gen_lval(node->lhs);
+        printf("  push [rsp]\n");
+        load(node->type);
+        dec(node->type);
+        store(node->type);
+        inc(node->type);
         return;
     case ND_IF: {
         int seq_num = label_seq_num++;

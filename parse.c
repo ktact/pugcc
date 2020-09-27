@@ -550,7 +550,7 @@ Node *mul() {
     }
 }
 
-// unary = "sizeof" unary | ("+" | "-" | "*" | "&")? unary | postfix
+// unary = "sizeof" unary | ("+" | "-" | "*" | "&")? unary | ("++" | "--") unary | postfix
 Node *unary() {
     if (consume("sizeof")) {
         Node *node = unary();
@@ -577,6 +577,10 @@ Node *unary() {
         return new_unary(ND_DEREF, unary());
     if (consume("&"))
         return new_unary(ND_ADDR, unary());
+    if (consume("++"))
+        return new_unary(ND_PRE_INC, unary());
+    if (consume("--"))
+        return new_unary(ND_PRE_DEC, unary());
     return postfix();
 }
 
@@ -600,7 +604,7 @@ Node *gnu_stmt_expr() {
     return node;
 }
 
-// postfix = primary ("[" expr "]" | "." ident | "->" ident)
+// postfix = primary ("[" expr "]" | "." ident | "->" ident | "++" | "--")
 Node *postfix() {
     Node *node = primary();
 
@@ -625,6 +629,14 @@ Node *postfix() {
         // x->y is short short for (*x).y
         node = new_unary(ND_DEREF, node);
         node = struct_ref(node);
+    }
+
+    if (consume("++")) {
+        node = new_unary(ND_POST_INC, node);
+    }
+
+    if (consume("--")) {
+        node = new_unary(ND_POST_DEC, node);
     }
 
     return node;

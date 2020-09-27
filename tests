@@ -73,8 +73,8 @@ int main() {
     assert(10, ({ int i; i=0; while (i < 10) i = i + 1; i; }), "int i; i=0; while (i < 10) i = i + 1; i;");
     assert(0,  ({ int i; i=0; while (0)      i = 1;     i; }), "int i; i=0; while (0)      i = 1;     i;");
 
-    assert(9, ({ int ret; ret = 0; int i; for (i = 0; i < 10; i = i + 1) ret = i; ret; }), "int ret; ret = 0; int i; for (i = 0; i < 10; i = i + 1) ret = i; ret;");
-    assert(0, ({ int ret; ret = 0; int i; for (i = 0; i < 1;  i = i + 1) ret = i; ret; }), "int ret; ret = 0; int i; for (i = 0; i < 1;  i = i + 1) ret = i; ret;");
+    assert(9, ({ int ret; ret = 0; int i; for (i = 0; i < 10; i++) ret = i; ret; }), "int ret; ret = 0; int i; for (i = 0; i < 10; i++) ret = i; ret;");
+    assert(0, ({ int ret; ret = 0; int i; for (i = 0; i <  1; i++) ret = i; ret; }), "int ret; ret = 0; int i; for (i = 0; i <  1; i++) ret = i; ret;");
 
     assert(10, ({ int ret; ret = 0; for (;ret < 10;) ret = ret + 1; ret; }), "int ret; ret = 0; for (;ret < 10;) ret = ret + 1; ret;");
 
@@ -198,6 +198,24 @@ int main() {
     assert(3, ({ struct t {char a;} x; struct t *y; y=&x; x.a=3; (*y).a; }), "struct t {char a;} x; struct t *y; y=&x; x.a=3; (*y).a;");
     assert(3, ({ struct t {char a;} x; struct t *y; y=&x; x.a=3; y->a; }), "struct t {char a;} x; struct t *y; y=&x; x.a=3; y->a;");
     assert(3, ({ struct t {char a;} x; struct t *y; y=&x; y->a=3; x.a; }), "struct t {char a;} x; struct t *y; y=&x; y->a=3; x.a;");
+
+    assert(3, ({ int i; i=2; ++i; }), "int i; i=2; ++i");
+    assert(1, ({ int i; i=2; --i; }), "int i; i=2; --i");
+    assert(2, ({ int i; i=2; i++; }), "int i; i=2; i++;");
+    assert(2, ({ int i; i=2; i--; }), "int i; i=2; i--;");
+
+    assert(3, ({ int i; i=2; i++; i; }), "int i; i=2; i++; i;");
+    assert(1, ({ int i; i=2; i--; i; }), "int i; i=2; i--; i;");
+
+    assert(1, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; *p++; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; *p++;");
+    assert(2, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; ++*p; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; ++*p;");
+    assert(1, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; *p--; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; *p--;");
+    assert(0, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; --*p; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; --*p;");
+
+    assert(0, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; (*p++)--; a[0]; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; (*p++); a[0];");
+    assert(0, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; (*p++)--; a[1]; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; (*p++); a[1];");
+    assert(2, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; (*p++)--; a[2]; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; (*p++); a[2];");
+    assert(2, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; (*p++)--;   *p; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p; p=a+1; (*p++);   *p;");
 
     printf("OK\n");
 
