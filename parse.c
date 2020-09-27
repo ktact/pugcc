@@ -375,7 +375,7 @@ Node *stmt() {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
-//       | basetype ident ("[" num "]")?";"
+//       | basetype ident ("[" num "]")* ("=" expr) ";"
 //       | expr ";"
 Node *stmt2() {
     if (consume("return")) {
@@ -453,8 +453,17 @@ Node *stmt2() {
         char *var_name = expect_ident();
         Type *type = type_suffix(base);
         Var *var = new_local_var(var_name, type);
+
+        if (consume(";"))
+            return new_node(ND_NOP);
+
+        expect("=");
+        Node *lhs = new_var_node(var);
+        Node *rhs = expr();
         expect(";");
-        return new_node(ND_NOP);
+
+        Node *node = new_binary(ND_ASSIGN, lhs, rhs);
+        return new_unary(ND_EXPR_STMT, node);
     }
 
     Node *node = new_unary(ND_EXPR_STMT, expr());
