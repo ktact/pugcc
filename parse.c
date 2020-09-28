@@ -274,6 +274,29 @@ static void read_global_var_decl() {
     Var *var = new_global_var(var_name, type);
 }
 
+// declarator = basetype ident ("[" num "]")* ("=" expr) ";"
+static Node *declarator() {
+    Type *base = basetype();
+    if (consume(";")) {
+        return new_node(ND_NOP);
+    }
+
+    char *var_name = expect_ident();
+    Type *type = type_suffix(base);
+    Var *var = new_local_var(var_name, type);
+
+    if (consume(";"))
+        return new_node(ND_NOP);
+
+    expect("=");
+    Node *lhs = new_var_node(var);
+    Node *rhs = expr();
+    expect(";");
+
+    Node *node = new_binary(ND_ASSIGN, lhs, rhs);
+    return new_unary(ND_EXPR_STMT, node);
+}
+
 // program = ((type func_decl) | (type ident ("[" num "]")?))*
 Program *program() {
     Function head = {};
@@ -375,7 +398,7 @@ Node *stmt() {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
-//       | basetype ident ("[" num "]")* ("=" expr) ";"
+//       | declarator
 //       | expr ";"
 Node *stmt2() {
     if (consume("return")) {
@@ -445,25 +468,7 @@ Node *stmt2() {
     }
 
     if (is_type()) {
-        Type *base = basetype();
-        if (consume(";")) {
-            return new_node(ND_NOP);
-        }
-
-        char *var_name = expect_ident();
-        Type *type = type_suffix(base);
-        Var *var = new_local_var(var_name, type);
-
-        if (consume(";"))
-            return new_node(ND_NOP);
-
-        expect("=");
-        Node *lhs = new_var_node(var);
-        Node *rhs = expr();
-        expect(";");
-
-        Node *node = new_binary(ND_ASSIGN, lhs, rhs);
-        return new_unary(ND_EXPR_STMT, node);
+        return declarator();
     }
 
     Node *node = new_unary(ND_EXPR_STMT, expr());
