@@ -4,26 +4,35 @@
 static int label_seq_num = 0;
 // 関数呼び出しの引数を積むレジスタ
 static char *_1byte_arg_regs[] = { "dil", "sil", "dl",  "cl",  "r8b", "r9b" };
+static char *_4byte_arg_regs[] = { "edi", "esi", "edx", "ecx", "r8d", "r9d" };
 static char *_8byte_arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8",  "r9"  };
 
 static void gen(Node *node);
 
 static void load(Type *type) {
     printf("  pop rax\n");
-    if (type->size == 1)
+    if (type->size == 1) {
         printf("  movsx rax, byte ptr [rax]\n");
-    else
+    } else if (type->size == 4) {
+        printf("  movsxd rax, dword ptr [rax]\n");
+    } else {
+        assert(type->size == 8);
         printf("  mov rax, [rax]\n");
+    }
     printf("  push rax\n");
 }
 
 static void store(Type *type) {
     printf("  pop rdi\n");
     printf("  pop rax\n");
-    if (type->size == 1)
+    if (type->size == 1) {
         printf("  mov [rax], dil\n");
-    else
+    } else if (type->size == 4) {
+        printf("  mov [rax], edi\n");
+    } else {
+        assert(type->size == 8);
         printf("  mov [rax], rdi\n");
+    }
     printf("  push rdi\n");
 }
 
@@ -246,14 +255,14 @@ static void gen(Node *node) {
         if(is_array(node->lhs))
             printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
         else
-            printf("  imul rdi, 8\n");
+            printf("  imul rdi, 4\n");
         printf("  add rax, rdi\n");
         break;
     case ND_PTR_SUB:
         if (is_array(node->lhs))
             printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
         else
-            printf("  imul rdi, 8\n");
+            printf("  imul rdi, 4\n");
         printf("  sub rax, rdi\n");
         break;
     case ND_PTR_DIFF:
@@ -330,8 +339,14 @@ static void emit_text(Program *program) {
         for (VarList *vl = f->params; vl; vl = vl->next) {
             Var *param = vl->var;
 
-            char *reg = (param->type->size == 1) ? _1byte_arg_regs[i++] : _8byte_arg_regs[i++];
-            printf("  mov [rbp-%d], %s\n", param->offset, reg);
+            if (param->type->size == 1) {
+                printf("  mov [rbp-%d], %s\n", param->offset, _1byte_arg_regs[i++]);
+            } else if (param->type->size == 4) {
+                printf("  mov [rbp-%d], %s\n", param->offset, _4byte_arg_regs[i++]);
+            } else {
+                assert(param->type->size == 8);
+                printf("  mov [rbp-%d], %s\n", param->offset, _8byte_arg_regs[i++]);
+            }
         }
 
         for (Node *stmt = f->body; stmt; stmt = stmt->next)

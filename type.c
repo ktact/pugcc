@@ -1,7 +1,7 @@
 #include "pugcc.h"
 
-Type *int_type  = &(Type){ INT,  8, 8 };
-Type *char_type = &(Type){ CHAR, 1, 1  };
+Type *int_type  = &(Type){ INT,  4, 4 };
+Type *char_type = &(Type){ CHAR, 1, 1 };
 
 int align_to(int n, int align) {
     return (n + align -1) & ~(align - 1);

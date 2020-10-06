@@ -569,18 +569,7 @@ Node *unary() {
     if (consume("sizeof")) {
         Node *node = unary();
         add_type(node);
-        switch (node->type->kind) {
-        case INT:
-            return new_num_node(8);
-        case CHAR:
-            return new_num_node(1);
-        case PTR:
-            return new_num_node(8);
-        case ARRAY:
-            return new_num_node(8 * node->type->array_size);
-        case STRUCT:
-            return new_num_node(node->var->type->size);
-        }
+        return new_num_node(node->type->size);
     }
 
     if (consume("+"))
