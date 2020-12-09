@@ -9,6 +9,7 @@ int align_to(int n, int align) {
 
 Type *pointer_to(Type *base_type) {
     Type *ptr = calloc(1, sizeof(Type));
+    ptr->base = base_type;
     ptr->kind = PTR;
     ptr->size  = 8;
     ptr->align = 8;
@@ -16,12 +17,13 @@ Type *pointer_to(Type *base_type) {
     return ptr;
 }
 
-Type *array_of(Type *type, int len) {
+Type *array_of(Type *base_type, int len) {
     Type *array = calloc(1, sizeof(Type));
+    array->base       = base_type;
     array->kind       = ARRAY;
     array->array_size = len;
-    array->size       = type->size * array->array_size;
-    array->align      = type->align;
+    array->size       = base_type->size * len;
+    array->align      = base_type->align;
     return array;
 }
 
@@ -81,11 +83,13 @@ void add_type(Node *node) {
     case ND_POST_DEC:
         node->type = node->lhs->type;
         break;
-    case ND_ADDR:
-        if (node->lhs->type->kind == ARRAY)
-            node->type = pointer_to(ARRAY);
+    case ND_ADDR: {
+        Type *type = node->lhs->type;
+        if (type->kind == ARRAY)
+            node->type = pointer_to(type->base);
         else
-            node->type = pointer_to(node->lhs->type);
+            node->type = pointer_to(type);
+                  }
         break;
     case ND_DEREF:
         if (node->lhs->type->kind == PTR)

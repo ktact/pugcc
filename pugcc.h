@@ -39,6 +39,7 @@ struct Type {
     int array_size;
     struct Type *pointer_to;
     Member *members;
+    Type *base;
 };
 
 typedef struct TagList TagList;
@@ -201,3 +202,6 @@ extern void codegen(Program *program);
 
 extern char *strndup(const char *s, size_t n);
 extern void error(char *fmt, ...);
+
+// 型関連の関数の宣言
+int align_to(int n, int align);
