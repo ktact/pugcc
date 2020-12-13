@@ -89,13 +89,13 @@ void add_type(Node *node) {
             node->type = pointer_to(type->base);
         else
             node->type = pointer_to(type);
-                  }
+        }
         break;
     case ND_DEREF:
         if (node->lhs->type->kind == PTR)
             node->type = node->lhs->type->pointer_to;
         else
-            node->type = pointer_to(node->lhs->type);
+            node->type = node->lhs->type->base;
         break;
     case ND_GNU_STMT_EXPR: {
             Node *last = node->body;

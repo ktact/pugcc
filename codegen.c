@@ -86,7 +86,7 @@ static void gen(Node *node) {
     case ND_VAR:
         gen_lval(node);
 
-        if (!is_array(node) && node->var->is_local)
+        if (node->type->kind != ARRAY && node->var->is_local)
             load(node->type);
 
         return;
@@ -225,7 +225,8 @@ static void gen(Node *node) {
         // 変数のアドレスをスタックに積む
         gen(node->lhs);
 
-        load(node->type);
+        if (node->type->kind != ARRAY)
+          load(node->type);
         return;
     case ND_RETURN:
         gen(node->lhs);
@@ -252,17 +253,11 @@ static void gen(Node *node) {
         printf("  sub rax, rdi\n");
         break;
     case ND_PTR_ADD:
-        if(is_array(node->lhs))
-            printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
-        else
-            printf("  imul rdi, 4\n");
+        printf("  imul rdi, %d\n", node->lhs->type->base->size);
         printf("  add rax, rdi\n");
         break;
     case ND_PTR_SUB:
-        if (is_array(node->lhs))
-            printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
-        else
-            printf("  imul rdi, 4\n");
+        printf("  imul rdi, %d\n", node->lhs->type->base->size);
         printf("  sub rax, rdi\n");
         break;
     case ND_PTR_DIFF:
@@ -270,7 +265,7 @@ static void gen(Node *node) {
         printf("  sub rax, rdi\n");
         printf("  cqo\n");
         if (is_array(node->lhs))
-            printf("  imul rdi, %d\n", node->lhs->type->size / node->lhs->type->array_size);
+            printf("  imul rdi, %d\n", node->lhs->type->base->size);
         else
             printf("  mov rdi, 4\n");
         printf("  idiv rdi\n");

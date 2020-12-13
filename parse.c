@@ -607,42 +607,46 @@ Node *gnu_stmt_expr() {
     return node;
 }
 
-// postfix = primary ("[" expr "]" | "." ident | "->" ident | "++" | "--")
+// postfix = primary ("[" expr "]" | "." ident | "->" ident | "++" | "--")*
 Node *postfix() {
     Node *node = primary();
 
-    if (consume("[")) {
-        /*
-         * x[n]を*(x+n)に読み替える
-         * 例) a[3]を*(a+3)に読み替える
-         */
+    for (;;) {
+      if (consume("[")) {
+        // x[y] is short for *(x+y)
         Node *index = new_num_node(expect_number());
         Node *expr = new_binary(ND_PTR_ADD, node, index);
 
         expect("]");
 
         node = new_unary(ND_DEREF, expr);
-    }
+        continue;
+      }
 
-    if (consume(".")) {
+      if (consume(".")) {
         node = struct_ref(node);
-    }
+        continue;
+      }
 
-    if (consume("->")) {
-        // x->y is short short for (*x).y
+      if (consume("->")) {
+        // x->y is short for (*x).y
         node = new_unary(ND_DEREF, node);
         node = struct_ref(node);
-    }
+        continue;
+      }
 
-    if (consume("++")) {
+      if (consume("++")) {
         node = new_unary(ND_POST_INC, node);
-    }
+        continue;
+      }
 
-    if (consume("--")) {
+      if (consume("--")) {
         node = new_unary(ND_POST_DEC, node);
-    }
+        continue;
+      }
 
-    return node;
+      return node;
+    }
 }
 
 // primary = num | str | ident funcargs? | "(" expr ")" | gnu-stmt-expr

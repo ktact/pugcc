@@ -144,22 +144,22 @@ int main() {
 
     assert(1, ({ subtract_char(7, 3, 3); }), "subtract_char(7, 3, 3);");
 
-    //assert(97, ({ "abc"[0]; }), "\"abc\"[0];");
-    //assert(98, ({ "abc"[1]; }), "\"abc\"[1];");
-    //assert(99, ({ "abc"[2]; }), "\"abc\"[2];");
-    //assert( 0, ({ "abc"[3]; }), "\"abc\"[3];");
+    assert(97, ({ "abc"[0]; }), "\"abc\"[0];");
+    assert(98, ({ "abc"[1]; }), "\"abc\"[1];");
+    assert(99, ({ "abc"[2]; }), "\"abc\"[2];");
+    assert( 0, ({ "abc"[3]; }), "\"abc\"[3];");
     //assert( 4, ({ sizeof("abc"); }), "sizeof(\"abc\");");
 
-    //assert( 7, ({ "\a"[0]; }), "\"\a\"[0];");
-    //assert( 8, ({ "\b"[0]; }), "\"\b\"[0];");
-    //assert( 9, ({ "\t"[0]; }), "\"\t\"[0];");
-    //assert(10, ({ "\n"[0]; }), "\"\n\"[0];");
-    //assert(11, ({ "\v"[0]; }), "\"\v\"[0];");
-    //assert(12, ({ "\f"[0]; }), "\"\f\"[0];");
-    //assert(13, ({ "\r"[0]; }), "\"\r\"[0];");
-    //assert(27, ({ "\e"[0]; }), "\"\e\"[0];");
-    //assert( 0, ({ "\0"[0]; }), "\"\0\"[0];");
- 
+    assert( 7, ({ "\a"[0]; }), "\"\\a\"[0];");
+    assert( 8, ({ "\b"[0]; }), "\"\\b\"[0];");
+    assert( 9, ({ "\t"[0]; }), "\"\\t\"[0];");
+    assert(10, ({ "\n"[0]; }), "\"\\n\"[0];");
+    assert(11, ({ "\v"[0]; }), "\"\\v\"[0];");
+    assert(12, ({ "\f"[0]; }), "\"\\f\"[0];");
+    assert(13, ({ "\r"[0]; }), "\"\\r\"[0];");
+    assert(27, ({ "\e"[0]; }), "\"\\e\"[0];");
+    assert( 0, ({ "\0"[0]; }), "\"\\0\"[0];");
+
     assert(2, ({ int x=2; { int x=3; }          x; }), "int x=2; { int x=3; }          x;");
     assert(2, ({ int x=2; { int x=3; } int y=4; x; }), "int x=2; { int x=3; } int y=4; x;");
     assert(3, ({ int x=2; {     x=3; }          x; }), "int x=2; {     x=3; }          x;");
@@ -215,6 +215,32 @@ int main() {
     assert(0, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--; a[1]; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++); a[1];");
     assert(2, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--; a[2]; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++); a[2];");
     assert(2, ({ int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++)--;   *p; }), "int a[3]; a[0]=0; a[1]=1; a[2]=2; int *p=a+1; (*p++);   *p;");
+
+    assert(1, ({ char a[3]; a[0]=0; a[1]=1; a[2]=2; char *p=a+1; *p++; }), "char a[3]; a[0]=0; a[1]=1; a[2]=2; char *p=a+1; *p++;");
+    assert(0, ({ char a[3]; a[0]=0; a[1]=1; a[2]=2; char *p=a+1; (*p++)--; a[0]; }), "char a[3]; a[0]=0; a[1]=1; a[2]=2; char *p=a+1; (*p++); a[0];");
+
+    assert(0, ({ int x[2][3]; int *y=x; *y=0; **x; }), "int x[2][3]; int *y=x; *y=0; **x;");
+    //assert(1, ({ int x[2][3]; int *y=x; *(y+1)=1; *(*x+1); }), "int x[2][3]; int *y=x; *(y+1)=1; *(*x+1);");
+    //assert(2, ({ int x[2][3]; int *y=x; *(y+2)=2; *(*x+2); }), "int x[2][3]; int *y=x; *(y+2)=2; *(*x+2);");
+    assert(3, ({ int x[2][3]; int *y=x; *(y+3)=3; **(x+1); }), "int x[2][3]; int *y=x; *(y+3)=3; **(x+1);");
+    //assert(4, ({ int x[2][3]; int *y=x; *(y+4)=4; *(*(x+1)+1); }), "int x[2][3]; int *y=x; *(y+4)=4; *(*(x+1)+1);");
+    //assert(5, ({ int x[2][3]; int *y=x; *(y+5)=5; *(*(x+1)+2); }), "int x[2][3]; int *y=x; *(y+5)=5; *(*(x+1)+2);");
+    assert(6, ({ int x[2][3]; int *y=x; *(y+6)=6; **(x+2); }), "int x[2][3]; int *y=x; *(y+6)=6; **(x+2);");
+
+    assert(0, ({ int x[2][3]; int *y=x; y[0]=0; x[0][0]; }), "int x[2][3]; int *y=x; y[0]=0; x[0][0];");
+    assert(1, ({ int x[2][3]; int *y=x; y[1]=1; x[0][1]; }), "int x[2][3]; int *y=x; y[1]=1; x[0][1];");
+    assert(2, ({ int x[2][3]; int *y=x; y[2]=2; x[0][2]; }), "int x[2][3]; int *y=x; y[2]=2; x[0][2];");
+    assert(3, ({ int x[2][3]; int *y=x; y[3]=3; x[1][0]; }), "int x[2][3]; int *y=x; y[3]=3; x[1][0];");
+    assert(4, ({ int x[2][3]; int *y=x; y[4]=4; x[1][1]; }), "int x[2][3]; int *y=x; y[4]=4; x[1][1];");
+    assert(5, ({ int x[2][3]; int *y=x; y[5]=5; x[1][2]; }), "int x[2][3]; int *y=x; y[5]=5; x[1][2];");
+    assert(6, ({ int x[2][3]; int *y=x; y[6]=6; x[2][0]; }), "int x[2][3]; int *y=x; y[6]=6; x[2][0];");
+
+    assert(48, ({ int x[3][4]; sizeof(x); }), "int x[3][4]; sizeof(x);");
+    assert(16, ({ int x[3][4]; sizeof(*x); }), "int x[3][4]; sizeof(*x);");
+    assert(4, ({ int x[3][4]; sizeof(**x); }), "int x[3][4]; sizeof(**x);");
+    assert(5, ({ int x[3][4]; sizeof(**x) + 1; }), "int x[3][4]; sizeof(**x) + 1;");
+    assert(5, ({ int x[3][4]; sizeof **x + 1; }), "int x[3][4]; sizeof **x + 1;");
+    //assert(8, ({ int x[3][4]; sizeof(**x + 1); }), "int x[3][4]; sizeof(**x + 1);");
 
     printf("OK\n");
 
