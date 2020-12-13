@@ -148,7 +148,7 @@ int main() {
     assert(98, ({ "abc"[1]; }), "\"abc\"[1];");
     assert(99, ({ "abc"[2]; }), "\"abc\"[2];");
     assert( 0, ({ "abc"[3]; }), "\"abc\"[3];");
-    //assert( 4, ({ sizeof("abc"); }), "sizeof(\"abc\");");
+    assert( 4, ({ sizeof("abc"); }), "sizeof(\"abc\");");
 
     assert( 7, ({ "\a"[0]; }), "\"\\a\"[0];");
     assert( 8, ({ "\b"[0]; }), "\"\\b\"[0];");

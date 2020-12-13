@@ -691,7 +691,7 @@ Node *primary() {
         Token *literal = token;
         token = token->next;
 
-        Type *type = array_of(char_type, token->len);
+        Type *type = array_of(char_type, literal->len);
         Var *var = new_global_var(new_label(), type);
         var->contents    = literal->str;
         var->content_len = literal->len;
