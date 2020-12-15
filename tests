@@ -81,7 +81,9 @@ int main() {
     assert( 3, ({ 1;  2;  3; }), "1;  2;  3;");
     assert( 3, ({ 1; {2;} 3; }), "1; {2;} 3;");
 
-    assert(55, ({ int i;int j;i=0;j=0;while(i<=10){ j=i+j;i=i+1;} j; }), "int i;int j;i=0;j=0;while(i<=10){ j=i+j;i=i+1;} j;");
+    assert(55, ({ int i=0;int j=0; while(i<=10){ j=i+j;i=i+1;} j; }), "int i=0;int j=0; while(i<=10){ j=i+j;i=i+1;} j;");
+    assert(55, ({ int j=0; for (int i=0; i <= 10; i++) j=j+i; j; }), "int j=0; for (int i=0; i <= 10; i++) j=j+i; j;");
+    assert(3, ({ int i=3; int j=0; for (int i=0; i<=10; i=i+1) j=j+i; i; }), "int i=3; int j=0; for (int i=0; i<=10; i=i+1) j=j+i; i;");
 
     assert(3, ({ ret3(); }), "ret3();");
     assert(5, ({ ret5(); }), "ret5();");

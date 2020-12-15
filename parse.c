@@ -396,7 +396,7 @@ Node *stmt() {
 // stmt2 = "return" expr ";"
 //       | "if" "(" expr ")" stmt ("else" stmt)?
 //       | "while" "(" expr ")" stmt
-//       | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//       | "for" "(" (expr? ";" | declarator) expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
 //       | declarator
 //       | expr ";"
@@ -433,9 +433,15 @@ Node *stmt2() {
     if (consume("for")) {
         Node *node = new_node(ND_FOR);
         expect("(");
+        Scope *sc = enter_scope();
+
         if (!consume(";")) {
-            node->init = new_unary(ND_EXPR_STMT, expr());
-            expect(";");
+            if (is_type()) {
+                node->init = declarator();
+            } else {
+                node->init = new_unary(ND_EXPR_STMT, expr());
+                expect(";");
+            }
         }
         if (!consume(";")) {
             node->cond = expr();
@@ -447,6 +453,8 @@ Node *stmt2() {
         }
         node->then = stmt();
         add_type(node);
+
+        leave_scope(sc);
         return node;
     }
 
