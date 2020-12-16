@@ -33,7 +33,7 @@ typedef struct Member Member;
 
 // 型を表す型
 struct Type {
-    enum { INT, CHAR, PTR, ARRAY, STRUCT } kind;
+    enum { CHAR, SHORT, INT, LONG, PTR, ARRAY, STRUCT } kind;
     int size;
     int align;
     int array_size;
@@ -57,10 +57,14 @@ struct Member {
     Member *next;
 };
 
-// int型の宣言
-extern Type *int_type;
 // char型の宣言
 extern Type *char_type;
+// short型の宣言
+extern Type *short_type;
+// int型の宣言
+extern Type *int_type;
+// long型の宣言
+extern Type *long_type;
 // 指定型の配列型を得る関数の宣言
 extern Type *array_of(Type *type, int len);
 // Xのポインタ型を得る関数の宣言

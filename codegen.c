@@ -4,6 +4,7 @@
 static int label_seq_num = 0;
 // 関数呼び出しの引数を積むレジスタ
 static char *_1byte_arg_regs[] = { "dil", "sil", "dl",  "cl",  "r8b", "r9b" };
+static char *_2byte_arg_regs[] = { "di",  "si",  "dx",  "cx",  "r8w", "r9w" };
 static char *_4byte_arg_regs[] = { "edi", "esi", "edx", "ecx", "r8d", "r9d" };
 static char *_8byte_arg_regs[] = { "rdi", "rsi", "rdx", "rcx", "r8",  "r9"  };
 
@@ -13,6 +14,8 @@ static void load(Type *type) {
     printf("  pop rax\n");
     if (type->size == 1) {
         printf("  movsx rax, byte ptr [rax]\n");
+    } else if (type->size == 2) {
+        printf("  movsx rax, word ptr [rax]\n");
     } else if (type->size == 4) {
         printf("  movsxd rax, dword ptr [rax]\n");
     } else {
@@ -27,6 +30,8 @@ static void store(Type *type) {
     printf("  pop rax\n");
     if (type->size == 1) {
         printf("  mov [rax], dil\n");
+    } else if (type->size == 2) {
+        printf(" mov [rax], di\n");
     } else if (type->size == 4) {
         printf("  mov [rax], edi\n");
     } else {
@@ -336,6 +341,8 @@ static void emit_text(Program *program) {
 
             if (param->type->size == 1) {
                 printf("  mov [rbp-%d], %s\n", param->offset, _1byte_arg_regs[i++]);
+            } else if (param->type->size == 2) {
+                printf("  mov [rbp-%d], %s\n", param->offset, _2byte_arg_regs[i++]);
             } else if (param->type->size == 4) {
                 printf("  mov [rbp-%d], %s\n", param->offset, _4byte_arg_regs[i++]);
             } else {

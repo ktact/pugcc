@@ -137,13 +137,17 @@ char *expect_ident();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// basetype = ("char" | "int" | struct_decl) "*"*
+// basetype = ("char" | "short" | "int" | "long" |  struct_decl) "*"*
 static Type *basetype() {
     Type *type = NULL;
-    if (consume("int")) {
-        type = int_type;
-    } else if (consume("char")) {
+    if (consume("char")) {
         type = char_type;
+    } else if (consume("short")) {
+        type = short_type;
+    } else if (consume("int")) {
+        type = int_type;
+    } else if (consume("long")) {
+        type = long_type;
     } else if (peek("struct")) {
         type = struct_decl();
     } else {
@@ -249,7 +253,7 @@ static Node *struct_ref(Node *lhs) {
 }
 
 static bool is_type() {
-    return (peek("int") || peek("char") || peek("struct"));
+    return (peek("char") || peek("short") || peek("int") || peek("long") || peek("struct"));
 }
 
 static bool is_function() {
