@@ -31,9 +31,9 @@ static void store(Type *type) {
 
     if (type->kind == BOOL) {
         // RDI = (RDI != 0) ? 1 : 0
-        printf("  cmp rdi, 0\n");
-        printf("  setne dil\n");
-        printf("  movzb rdi, dil\n");
+        printf("  cmp rdi, 0\n");     // RDIと0を比較し結果をフラグレジスタにセットする
+        printf("  setne dil\n");      // RDI != 0である場合にDILに1をセットする
+        printf("  movzb rdi, dil\n"); // 上位56ビットを0クリアし下位8ビットにDILの値をセットする
     }
 
     if (type->size == 1) {
