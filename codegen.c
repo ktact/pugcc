@@ -232,6 +232,10 @@ static void gen(Node *node) {
         printf("  push rax\n");
         return;
     }
+    case ND_COMMA_OP:
+        gen(node->lhs);
+        gen(node->rhs);
+        return;
     case ND_ADDR:
         gen_lval(node->lhs);
         return;

@@ -90,6 +90,7 @@ typedef struct VarList VarList;
 struct VarList {
     Var *var;
     VarList *next;
+    Type *type_def;
 };
 
 typedef struct {
@@ -107,6 +108,7 @@ typedef enum {
     ND_MUL,           // *
     ND_DIV,           // /
     ND_ASSIGN,        // =
+    ND_COMMA_OP,      // ,
     ND_PRE_INC,       // ++x
     ND_PRE_DEC,       // --x
     ND_POST_INC,      // x++

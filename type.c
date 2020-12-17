@@ -70,6 +70,9 @@ void add_type(Node *node) {
     case ND_VAR:
         node->type = node->var->type;
         break;
+    case ND_COMMA_OP:
+        node->type = node->rhs->type;
+        break;
     case ND_MEMBER:
         node->type = node->member->type;
         break;

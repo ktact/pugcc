@@ -82,12 +82,35 @@ static Var *new_global_var(char *name, Type *type) {
     return var;
 }
 
+static Var *push_typedef_to_scope(char *type_name, Type *base_type) {
+    Var *self_defined_type = calloc(1, sizeof(Var));
+    self_defined_type->name     = type_name;
+    self_defined_type->len      = strlen(type_name);
+
+    VarList *sc = calloc(1, sizeof(VarList));
+    sc->var = self_defined_type;
+    sc->type_def = base_type;
+    sc->next = var_scope;
+    var_scope = sc;
+
+    return self_defined_type;
+}
+
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 static Var *find_var(char *name) {
     for (VarList *vl = var_scope; vl; vl = vl->next) {
         Var *var = vl->var;
         if (var->len == strlen(name) && !memcmp(name, var->name, var->len))
             return var;
+    }
+    return NULL;
+}
+
+static Type *find_typedef(char *type_name) {
+    for (VarList *vl = var_scope; vl; vl = vl->next) {
+        Var *var = vl->var;
+        if (var->len == strlen(type_name) && !memcmp(type_name, var->name, var->len))
+            return vl->type_def;
     }
     return NULL;
 }
@@ -137,7 +160,7 @@ char *expect_ident();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// basetype = ("_Bool" | "char" | "short" | "int" | "long" |  struct_decl) "*"*
+// basetype = ("_Bool" | "char" | "short" | "int" | "long" | struct_decl | typedef-name) "*"*
 static Type *basetype() {
     Type *type = NULL;
     if (consume("_Bool")) {
@@ -150,11 +173,15 @@ static Type *basetype() {
         type = int_type;
     } else if (consume("long")) {
         type = long_type;
-    } else if (peek("struct")) {
+    } else if (consume("struct")) {
         type = struct_decl();
     } else {
-        error_at(token->str, "型ではありません");
+        char *name = consume_ident();
+        fprintf(stderr, "basetype(): name=%s\n", name);
+        type = find_typedef(name);
     }
+
+    assert(type);
 
     while (consume("*"))
         type = pointer_to(type);
@@ -184,8 +211,6 @@ static void push_tag_to_scope(char *name, Type *type) {
 // struct_decl = "struct" ident
 //             | "struct" ident? "{" struct_member "}"
 static Type *struct_decl() {
-    expect("struct");
-
     // 構造体名を読む
     char *tag_name = consume_ident();
     if (tag_name && !peek("{")) {
@@ -255,7 +280,7 @@ static Node *struct_ref(Node *lhs) {
 }
 
 static bool is_type() {
-    return (peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("struct"));
+    return (peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("struct") || find_typedef(token->str));
 }
 
 static bool is_function() {
@@ -404,6 +429,7 @@ Node *stmt() {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" (expr? ";" | declarator) expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
+//       | "typedef" basetype ident ("[" num "]")* ";"
 //       | declarator
 //       | expr ";"
 Node *stmt2() {
@@ -481,6 +507,15 @@ Node *stmt2() {
         return node;
     }
 
+    if (consume("typedef")) {
+        Type *base_type = basetype();
+        char *type_name = expect_ident();
+        base_type = type_suffix(base_type);
+        expect(";");
+        push_typedef_to_scope(type_name, base_type);
+        return new_node(ND_NOP);
+    }
+
     if (is_type()) {
         return declarator();
     }
@@ -490,9 +525,16 @@ Node *stmt2() {
     return node;
 }
 
-// expr = assign
+// expr = assign ("." assign)*
 Node *expr() {
-    return assign();
+    Node *node = assign();
+
+    while (consume(",")) {
+        node = new_unary(ND_EXPR_STMT, node);
+        node = new_binary(ND_COMMA_OP, node, assign());
+    }
+
+    return node;
 }
 
 // assign = equality ("=" assign)?
