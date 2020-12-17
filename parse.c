@@ -137,10 +137,12 @@ char *expect_ident();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// basetype = ("char" | "short" | "int" | "long" |  struct_decl) "*"*
+// basetype = ("_Bool" | "char" | "short" | "int" | "long" |  struct_decl) "*"*
 static Type *basetype() {
     Type *type = NULL;
-    if (consume("char")) {
+    if (consume("_Bool")) {
+        type = bool_type;
+    } else if (consume("char")) {
         type = char_type;
     } else if (consume("short")) {
         type = short_type;
@@ -253,7 +255,7 @@ static Node *struct_ref(Node *lhs) {
 }
 
 static bool is_type() {
-    return (peek("char") || peek("short") || peek("int") || peek("long") || peek("struct"));
+    return (peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("struct"));
 }
 
 static bool is_function() {

@@ -1,5 +1,6 @@
 #include "pugcc.h"
 
+Type *bool_type  = &(Type){ BOOL,  1, 1 };
 Type *char_type  = &(Type){ CHAR,  1, 1 };
 Type *short_type = &(Type){ SHORT, 2, 2 };
 Type *int_type   = &(Type){ INT,   4, 4 };

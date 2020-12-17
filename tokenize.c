@@ -129,7 +129,7 @@ static bool is_alnum(char c) {
 }
 
 static int reserved_word(char *p) {
-    char *keywords[] = { "return", "if", "else", "while", "for", "char", "short", "int", "long", "struct", "sizeof" };
+    char *keywords[] = { "return", "if", "else", "while", "for", "_Bool", "char", "short", "int", "long", "struct", "sizeof" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))

@@ -26,8 +26,16 @@ static void load(Type *type) {
 }
 
 static void store(Type *type) {
-    printf("  pop rdi\n");
-    printf("  pop rax\n");
+    printf("  pop rdi\n"); // RDI = rhs
+    printf("  pop rax\n"); // RAX = lhs
+
+    if (type->kind == BOOL) {
+        // RDI = (RDI != 0) ? 1 : 0
+        printf("  cmp rdi, 0\n");
+        printf("  setne dil\n");
+        printf("  movzb rdi, dil\n");
+    }
+
     if (type->size == 1) {
         printf("  mov [rax], dil\n");
     } else if (type->size == 2) {
@@ -38,6 +46,7 @@ static void store(Type *type) {
         assert(type->size == 8);
         printf("  mov [rax], rdi\n");
     }
+
     printf("  push rdi\n");
 }
 

@@ -33,7 +33,7 @@ typedef struct Member Member;
 
 // 型を表す型
 struct Type {
-    enum { CHAR, SHORT, INT, LONG, PTR, ARRAY, STRUCT } kind;
+    enum { BOOL, CHAR, SHORT, INT, LONG, PTR, ARRAY, STRUCT } kind;
     int size;
     int align;
     int array_size;
@@ -57,6 +57,8 @@ struct Member {
     Member *next;
 };
 
+// bool型の宣言
+extern Type *bool_type;
 // char型の宣言
 extern Type *char_type;
 // short型の宣言
