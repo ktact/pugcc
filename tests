@@ -250,6 +250,7 @@ int main() {
     assert(4, ({ struct {char a; short b;} x; sizeof(x); }), "struct {char a; short b;} x; sizeof(x);");
 
     assert(8, ({ long x; sizeof(x); }), "long x; sizeof(x);");
+    assert(8, ({ long long x; sizeof(x); }), "long long x; sizeof(x);");
     assert(16, ({ struct {char a; long b;} x; sizeof(x); }), "struct {char a; long b} x; sizeof(x);");
 
     assert(1, sub_short(7, 3, 3), "sub_short(7, 3, 3)");

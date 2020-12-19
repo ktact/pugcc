@@ -172,6 +172,7 @@ static Type *basetype() {
     } else if (consume("int")) {
         type = int_type;
     } else if (consume("long")) {
+        consume("long");
         type = long_type;
     } else if (consume("struct")) {
         type = struct_decl();
