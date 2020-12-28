@@ -357,7 +357,10 @@ Program *program() {
 
     while(!at_eof()) {
         if (is_function()) {
-            cur->next = func_decl();
+            Function *f = func_decl();
+            if (!f) continue;
+
+            cur->next = f;
             cur = cur->next;
         } else {
             global_var();
@@ -399,7 +402,7 @@ static VarList *read_func_params() {
     return head;
 }
 
-// func_decl = basetype declarator "(" params? ")" "{" stmt* "}"
+// func_decl = basetype declarator "(" params? ")" ("{" stmt* "}" | ";")
 // params    = param ("," param)*
 // param     = basetype declarator type_suffix
 Function *func_decl() {
@@ -415,11 +418,15 @@ Function *func_decl() {
 
     Scope *sc = enter_scope();
     f->params = read_func_params();
-    expect("{");
+
+    if (consume(";")) {
+        leave_scope(sc);
+        return NULL;
+    }
 
     Node head = {};
     Node *cur = &head;
-
+    expect("{");
     while (!consume("}")) {
         cur->next = stmt();
         cur = cur->next;
