@@ -30,6 +30,12 @@ Type *array_of(Type *base_type, int len) {
     return array;
 }
 
+Type *func_type(Type *return_type) {
+    Type *type = calloc(1, sizeof(Type));
+    type->kind        = FUNC;
+    type->return_type = return_type;
+    return type;
+}
 bool is_pointer(Node *node) {
     return node->kind == ND_VAR && node->type->kind == PTR;
 }
@@ -76,7 +82,6 @@ void add_type(Node *node) {
     case ND_MEMBER:
         node->type = node->member->type;
         break;
-    case ND_FUNCCALL:
     case ND_NUM:
         node->type = int_type;
         break;

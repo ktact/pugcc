@@ -71,13 +71,15 @@ static Var *new_local_var(char *name, Type *type) {
     return var;
 }
 
-static Var *new_global_var(char *name, Type *type) {
+static Var *new_global_var(char *name, Type *type, bool emit) {
     Var *var = new_var(name, type, false);
 
-    VarList *vl = calloc(1, sizeof(VarList));
-    vl->var = var;
-    vl->next = globals;
-    globals = vl;
+    if (emit) {
+        VarList *vl = calloc(1, sizeof(VarList));
+        vl->var = var;
+        vl->next = globals;
+        globals = vl;
+    }
 
     return var;
 }
@@ -321,7 +323,7 @@ static void global_var() {
     type = declarator(type, &var_name);
     type = type_suffix(type);
     expect(";");
-    new_global_var(var_name, type);
+    new_global_var(var_name, type, /* emit: */true);
 }
 
 // declaration = basetype declarator type_suffix ("=" expr)? ";"
@@ -408,7 +410,9 @@ static VarList *read_func_params() {
 Function *func_decl() {
     Type *type = basetype();
     char *func_name = NULL;
-    declarator(type, &func_name);
+    type = declarator(type, &func_name);
+
+    new_global_var(func_name, func_type(type), false);
 
     Function *f = calloc(1, sizeof(Function));
     f->name = func_name;
@@ -424,6 +428,7 @@ Function *func_decl() {
         return NULL;
     }
 
+    // 関数本体を読む
     Node head = {};
     Node *cur = &head;
     expect("{");
@@ -756,6 +761,16 @@ Node *primary() {
             node->funcname = ident;
             node->args     = funcargs();
             add_type(node);
+
+            Var *var = find_var(ident);
+            if (var) {
+                if (var->type->kind != FUNC)
+                    fprintf(stderr, "%sは関数ではありません。\n", ident);
+                node->type = var->type->return_type;
+            } else {
+                fprintf(stderr, "%s: 関数の暗黙的な宣言です。\n", ident);
+                node->type = int_type;
+            }
             return node;
         } else {
             // 変数参照
@@ -779,7 +794,7 @@ Node *primary() {
         token = token->next;
 
         Type *type = array_of(char_type, literal->len);
-        Var *var = new_global_var(new_label(), type);
+        Var *var = new_global_var(new_label(), type, /* emit: */true);
         var->contents    = literal->str;
         var->content_len = literal->len;
 

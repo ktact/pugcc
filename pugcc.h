@@ -33,13 +33,14 @@ typedef struct Member Member;
 
 // 型を表す型
 struct Type {
-    enum { BOOL, CHAR, SHORT, INT, LONG, PTR, ARRAY, STRUCT } kind;
+    enum { BOOL, CHAR, SHORT, INT, LONG, PTR, ARRAY, STRUCT, FUNC } kind;
     int size;
     int align;
     int array_size;
     struct Type *pointer_to;
     Member *members;
     Type *base;
+    Type *return_type;
 };
 
 typedef struct TagList TagList;
@@ -67,6 +68,8 @@ extern Type *short_type;
 extern Type *int_type;
 // long型の宣言
 extern Type *long_type;
+// 関数型の宣言
+extern Type *func_type(Type *return_type);
 // 指定型の配列型を得る関数の宣言
 extern Type *array_of(Type *type, int len);
 // Xのポインタ型を得る関数の宣言
