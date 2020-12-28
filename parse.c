@@ -190,7 +190,7 @@ static Type *basetype() {
     return type;
 }
 
-// type_suffix = ("[" num "]")*
+// type_suffix = ("[" num "]" type_suffix)?
 static Type *type_suffix(Type *base) {
     if (!consume("["))
         return base;
@@ -306,8 +306,8 @@ static void read_global_var_decl() {
     Var *var = new_global_var(var_name, type);
 }
 
-// declarator = basetype ident ("[" num "]")* ("=" expr) ";"
-static Node *declarator() {
+// declaration = basetype ident ("[" num "]")* ("=" expr) ";"
+static Node *declaration() {
     Type *base = basetype();
     if (consume(";")) {
         return new_node(ND_NOP);
@@ -428,10 +428,10 @@ Node *stmt() {
 // stmt2 = "return" expr ";"
 //       | "if" "(" expr ")" stmt ("else" stmt)?
 //       | "while" "(" expr ")" stmt
-//       | "for" "(" (expr? ";" | declarator) expr? ";" expr? ")" stmt
+//       | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
 //       | "typedef" basetype ident ("[" num "]")* ";"
-//       | declarator
+//       | declaration
 //       | expr ";"
 Node *stmt2() {
     if (consume("return")) {
@@ -470,7 +470,7 @@ Node *stmt2() {
 
         if (!consume(";")) {
             if (is_type()) {
-                node->init = declarator();
+                node->init = declaration();
             } else {
                 node->init = new_unary(ND_EXPR_STMT, expr());
                 expect(";");
@@ -518,7 +518,7 @@ Node *stmt2() {
     }
 
     if (is_type()) {
-        return declarator();
+        return declaration();
     }
 
     Node *node = new_unary(ND_EXPR_STMT, expr());
