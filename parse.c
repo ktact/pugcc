@@ -164,10 +164,12 @@ char *expect_ident();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// basetype = ("_Bool" | "char" | "short" | "int" | "long" | struct_decl | typedef-name) "*"*
+// basetype = ("void" | "_Bool" | "char" | "short" | "int" | "long" | struct_decl | typedef-name) "*"*
 static Type *basetype() {
     Type *type = NULL;
-    if (consume("_Bool")) {
+    if (consume("void")) {
+        return void_type;
+    } else if (consume("_Bool")) {
         return bool_type;
     } else if (consume("char")) {
         return char_type;
@@ -297,7 +299,7 @@ static Node *struct_ref(Node *lhs) {
 }
 
 static bool is_type() {
-    return (peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("struct") || find_typedef(token->str));
+    return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("struct") || find_typedef(token->str));
 }
 
 static bool is_function() {
@@ -337,8 +339,13 @@ static Node *declaration() {
     char *var_name = NULL;
     type = declarator(type, &var_name);
     type = type_suffix(type);
-    Var *var = new_local_var(var_name, type);
 
+    if (type->kind == VOID) {
+        fprintf(stderr, "%s: 変数はvoidで宣言されています。\n", var_name);
+        exit(1);
+    }
+
+    Var *var = new_local_var(var_name, type);
     if (consume(";"))
         return new_node(ND_NOP);
 

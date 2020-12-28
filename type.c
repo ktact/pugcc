@@ -1,5 +1,6 @@
 #include "pugcc.h"
 
+Type *void_type  = &(Type){ VOID,  1, 1 };
 Type *bool_type  = &(Type){ BOOL,  1, 1 };
 Type *char_type  = &(Type){ CHAR,  1, 1 };
 Type *short_type = &(Type){ SHORT, 2, 2 };
@@ -107,6 +108,11 @@ void add_type(Node *node) {
             node->type = node->lhs->type->pointer_to;
         else
             node->type = node->lhs->type->base;
+
+        if (node->type->kind == VOID) {
+            fprintf(stderr, "%s: void型を参照しています。\n", node->var->name);
+            exit(1);
+        }
         break;
     case ND_GNU_STMT_EXPR: {
             Node *last = node->body;
