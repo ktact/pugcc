@@ -154,7 +154,7 @@ struct Node {
     Member *member; // 構造体のメンバへのアクセス
     Node *args;
     Node *next;
-    int val;       // kindがND_NUMの場合のみ使う
+    long val;      // kindがND_NUMの場合のみ使う
     Var *var;
     Type *type;    // 変数の型; kindがND_VARの場合のみ使う
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_VARの場合のみ使う
