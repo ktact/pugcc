@@ -138,6 +138,44 @@ static int reserved_word(char *p) {
     return 0;
 }
 
+static char get_escape_char(char c) {
+    switch (c) {
+        case 'a': return '\a';
+        case 'b': return '\b';
+        case 't': return '\t';
+        case 'n': return '\n';
+        case 'v': return '\v';
+        case 'f': return '\f';
+        case 'r': return '\r';
+        case 'e': return 27;
+        case '0': return 0;
+        default: return c;
+    }
+}
+
+static Token *read_char_literal(Token *cur, char *start) {
+    char *p = start + 1;
+    if (*p == '\0')
+        error_at(start, "文字リテラルが閉じられていません。\n");
+
+    char c;
+    if (*p == '\\') {
+        p++;
+        c = get_escape_char(*p++);
+    } else {
+        c = *p++;
+    }
+
+    if (*p != '\'')
+        error_at(start, "文字リテラルが長すぎます。\n");
+    p++;
+
+    Token *tok = new_token(TK_NUM, cur, start, p - start);
+    tok->val = c;
+
+    return tok;
+}
+
 // 入力文字列pをトークナイズしてそれを返す
 Token *tokenize() {
     char *p = user_input;
@@ -166,6 +204,13 @@ Token *tokenize() {
             if (!q)
                 error_at(p, "コメントが閉じられていません");
             p = q + 2;
+            continue;
+        }
+
+        // 文字リテラル
+        if (*p == '\'') {
+            cur = read_char_literal(cur, p);
+            p += cur->len;
             continue;
         }
 

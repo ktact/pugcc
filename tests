@@ -284,6 +284,9 @@ int main() {
 
     { void *x; }
 
+    assert(97, 'a', "'a'");
+    assert(10, '\n', "\'\\n\'");
+
     printf("OK\n");
 
     return 0;
