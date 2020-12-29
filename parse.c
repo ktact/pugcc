@@ -137,6 +137,8 @@ static char *new_label() {
     return strndup(buf, 20);
 }
 
+static bool is_type();
+static Type *basetype(bool *is_typedef);
 static Type *declarator(Type *type, char **name);
 static Type *type_suffix(Type *type);
 static Type *struct_decl();
@@ -164,27 +166,41 @@ char *expect_ident();
 bool at_eof();
 void error_at(char *loc, char *fmt, ...);
 
-// basetype = ("void" | "_Bool" | "char" | "short" | "int" | "long" | struct_decl | typedef-name) "*"*
-static Type *basetype() {
-    Type *type = NULL;
-    if (consume("void")) {
-        return void_type;
-    } else if (consume("_Bool")) {
-        return bool_type;
-    } else if (consume("char")) {
-        return char_type;
-    } else if (consume("short")) {
-        return short_type;
-    } else if (consume("int")) {
-        return int_type;
-    } else if (consume("long")) {
-        consume("long");
-        return long_type;
-    } else if (consume("struct")) {
-        return struct_decl();
+// basetype = builtin_type | struct_decl | typedef-name
+// builtin_type = "void" | "_Bool" | "char" | "short" | "int" | "long"
+static Type *basetype(bool *is_typedef) {
+    if (is_typedef) *is_typedef = false;
+
+    Type *type = int_type;
+    bool non_builtin_type_already_appeared = false;
+    while (is_type()) {
+        if (consume("typedef")) {
+            *is_typedef = true;
+        } else if (consume("void")) {
+            type = void_type;
+        } else if (consume("_Bool")) {
+            type = bool_type;
+        } else if (consume("char")) {
+            type = char_type;
+        } else if (consume("short")) {
+            type = short_type;
+        } else if (consume("int")) {
+            type = int_type;
+        } else if (consume("long")) {
+            type = long_type;
+        } else if (consume("struct")) {
+            if (non_builtin_type_already_appeared) break;
+            type = struct_decl();
+            non_builtin_type_already_appeared = true;
+        } else {
+            if (non_builtin_type_already_appeared) break;
+            char *type_name = consume_ident();
+            type = find_typedef(type_name);
+            non_builtin_type_already_appeared = true;
+        }
     }
 
-    return find_typedef(consume_ident());
+    return type;
 }
 
 // declarator = "*" ("(" declarator ")" | ident) type_suffix
@@ -266,7 +282,7 @@ static Type *struct_decl() {
 
 // struct_member = basetype declarator type_suffix ";"
 static Member *struct_member() {
-    Type *type = basetype();
+    Type *type = basetype(NULL);
     char *name = NULL;
     type = declarator(type, &name);
     type = type_suffix(type);
@@ -299,7 +315,7 @@ static Node *struct_ref(Node *lhs) {
 }
 
 static bool is_type() {
-    return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("struct") || find_typedef(token->str));
+    return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("struct") || peek("typedef") || find_typedef(token->str));
 }
 
 static bool is_function() {
@@ -307,7 +323,8 @@ static bool is_function() {
     Token *tok = token;
 
     // トークンを先読みして型、識別子、（であれば関数宣言であると判断する
-    Type *type = basetype();
+    bool is_typedef = false;
+    Type *type = basetype(&is_typedef);
     char *func_name = NULL;
     declarator(type, &func_name);
     bool is_function = func_name && consume("(");
@@ -320,34 +337,47 @@ static bool is_function() {
 
 // global_var = basetype declarator type_suffix ";"
 static void global_var() {
-    Type *type = basetype();
-    char *var_name = NULL;
-    type = declarator(type, &var_name);
+    bool is_typedef = false;
+    Type *type = basetype(&is_typedef);
+    char *name = NULL;
+    type = declarator(type, &name);
     type = type_suffix(type);
     expect(";");
-    new_global_var(var_name, type, /* emit: */true);
+
+    if (is_typedef)
+        push_typedef_to_scope(name, type);
+    else
+        new_global_var(name, type, /* emit: */true);
 }
 
 // declaration = basetype declarator type_suffix ("=" expr)? ";"
 //             | basetype ";"
 static Node *declaration() {
-    Type *type = basetype();
+    bool is_typedef = false;
+    Type *type = basetype(&is_typedef);
     if (consume(";")) {
         return new_node(ND_NOP);
     }
 
-    char *var_name = NULL;
-    type = declarator(type, &var_name);
+    char *name = NULL;
+    type = declarator(type, &name);
     type = type_suffix(type);
 
+    if (is_typedef) {
+        expect(";");
+        push_typedef_to_scope(name, type);
+        return new_node(ND_NOP);
+    }
+
     if (type->kind == VOID) {
-        fprintf(stderr, "%s: 変数はvoidで宣言されています。\n", var_name);
+        fprintf(stderr, "%s: 変数はvoidで宣言されています。\n", name);
         exit(1);
     }
 
-    Var *var = new_local_var(var_name, type);
-    if (consume(";"))
+    Var *var = new_local_var(name, type);
+    if (consume(";")) {
         return new_node(ND_NOP);
+    }
 
     expect("=");
     Node *lhs = new_var_node(var);
@@ -384,7 +414,7 @@ Program *program() {
 }
 
 static VarList *read_func_param() {
-    Type *type = basetype();
+    Type *type = basetype(NULL);
     char *name = NULL;
     type = declarator(type, &name);
     type = type_suffix(type);
@@ -415,7 +445,7 @@ static VarList *read_func_params() {
 // params    = param ("," param)*
 // param     = basetype declarator type_suffix
 Function *func_decl() {
-    Type *type = basetype();
+    Type *type = basetype(NULL);
     char *func_name = NULL;
     type = declarator(type, &func_name);
 
@@ -471,7 +501,6 @@ Node *stmt() {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
-//       | "typedef" basetype declarator type_suffix ";"
 //       | declaration
 //       | expr ";"
 Node *stmt2() {
@@ -547,16 +576,6 @@ Node *stmt2() {
         node->body = head.next;
         add_type(node);
         return node;
-    }
-
-    if (consume("typedef")) {
-        Type *type = basetype();
-        char *type_name = NULL;
-        type = declarator(type, &type_name);
-        type = type_suffix(type);
-        expect(";");
-        push_typedef_to_scope(type_name, type);
-        return new_node(ND_NOP);
     }
 
     if (is_type()) {
