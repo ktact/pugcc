@@ -92,6 +92,24 @@ static void gen_lval(Node *node) {
     }
 }
 
+static void truncate(Type *type) {
+    printf("  pop rax\n");
+
+    if (type->kind == BOOL) {
+        printf("  cmp rax, 0\n");
+        printf("  setne al\n");
+    }
+
+    if (type->size == 1) {
+        printf("  movsx rax, al\n");
+    } else if (type->size == 2) {
+        printf("  movsx rax, ax\n");
+    } else if (type->size == 4) {
+        printf("  movsxd rax, eax\n");
+    }
+
+    printf("  push rax\n");
+}
 static void gen(Node *node) {
     switch (node->kind) {
     case ND_NUM:
@@ -108,6 +126,10 @@ static void gen(Node *node) {
         if (node->type->kind != ARRAY && node->var->is_local)
             load(node->type);
 
+        return;
+    case ND_CAST:
+        gen(node->lhs);
+        truncate(node->type);
         return;
     case ND_EXPR_STMT:
         gen(node->lhs);

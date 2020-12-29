@@ -124,6 +124,7 @@ typedef enum {
     ND_LT,            // <
     ND_LE,            // <=
     ND_NUM,           // Integer
+    ND_CAST,          // Type cast
     ND_IF,            // if
     ND_WHILE,         // while
     ND_FOR,           // for
