@@ -140,7 +140,9 @@ static char *new_label() {
 static bool is_type();
 static Type *basetype(bool *is_typedef);
 static Type *declarator(Type *type, char **name);
+static Type *abstract_declarator(Type *type);
 static Type *type_suffix(Type *type);
+static Type *type_name();
 static Type *struct_decl();
 static Member *struct_member();
 Function *func_decl();
@@ -220,6 +222,22 @@ static Type *declarator(Type *type, char **name) {
     return type_suffix(type);
 }
 
+// abstract_declarator = "*" ("(" abstract_declarator ")")? type_suffix
+static Type *abstract_declarator(Type *type) {
+    while (consume("*"))
+        type = pointer_to(type);
+
+    if (consume("(")) {
+        Type *placeholder = calloc(1, sizeof(Type));
+        Type *new_type = abstract_declarator(placeholder);
+        expect(")");
+        memcpy(placeholder, type_suffix(type), sizeof(Type));
+        return new_type;
+    }
+
+    return type_suffix(type);
+}
+
 // type_suffix = ("[" num "]" type_suffix)?
 static Type *type_suffix(Type *type) {
     if (!consume("["))
@@ -229,6 +247,13 @@ static Type *type_suffix(Type *type) {
 
     type = type_suffix(type);
     return array_of(type, size);
+}
+
+// type_name = basetype abstract_declarator type_suffix
+static Type *type_name() {
+    Type *type = basetype(NULL);
+    type = abstract_declarator(type);
+    return type_suffix(type);
 }
 
 static void push_tag_to_scope(char *name, Type *type) {
@@ -682,14 +707,8 @@ Node *mul() {
     }
 }
 
-// unary = "sizeof" unary | ("+" | "-" | "*" | "&")? unary | ("++" | "--") unary | postfix
+// unary = ("+" | "-" | "*" | "&")? unary | ("++" | "--") unary | postfix
 Node *unary() {
-    if (consume("sizeof")) {
-        Node *node = unary();
-        add_type(node);
-        return new_num_node(node->type->size);
-    }
-
     if (consume("+"))
         return unary();
     if (consume("-"))
@@ -767,7 +786,13 @@ Node *postfix() {
     }
 }
 
-// primary = num | str | ident funcargs? | "(" expr ")" | gnu-stmt-expr
+// primary = num
+//         | str
+//         | ident funcargs?
+//         | "(" expr ")"
+//         | "sizeof" "(" type_name ")"
+//         | "sizeof" unary
+//         | gnu-stmt-expr
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -825,6 +850,22 @@ Node *primary() {
         var->content_len = literal->len;
 
         return new_var_node(var);
+    }
+
+    if (consume("sizeof")) {
+        Token *tok = token;
+        if (consume("(")) {
+            if (is_type()) {
+                Type *type = type_name();
+                expect(")");
+                return new_num_node(type->size);
+            }
+            token = tok;
+        }
+
+        Node *node = unary();
+        add_type(node);
+        return new_num_node(node->type->size);
     }
 
     // そうでなければ数値のはず
