@@ -769,12 +769,11 @@ Node *postfix() {
     for (;;) {
       if (consume("[")) {
         // x[y] is short for *(x+y)
-        Node *index = new_num_node(expect_number());
-        Node *expr = new_binary(ND_PTR_ADD, node, index);
+        Node *exp = new_binary(ND_PTR_ADD, node, expr());
 
         expect("]");
 
-        node = new_unary(ND_DEREF, expr);
+        node = new_unary(ND_DEREF, exp);
         continue;
       }
 
