@@ -139,6 +139,9 @@ typedef enum {
     ND_DEREF,         // *x
     ND_NOT,           // !
     ND_BITNOT,        // ~
+    ND_BITAND,        // &
+    ND_BITOR,         // |
+    ND_BITXOR,        // ^
     ND_LOGAND,        // &&
     ND_LOGOR,         // ||
     ND_RETURN,        // return
