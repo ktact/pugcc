@@ -135,6 +135,7 @@ typedef enum {
     ND_MEMBER,        // . (struct member access)
     ND_ADDR,          // &x
     ND_DEREF,         // *x
+    ND_NOT,           // !
     ND_RETURN,        // return
     ND_NOP,           // Empty statement
 } NodeKind;

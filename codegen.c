@@ -175,6 +175,15 @@ static void gen(Node *node) {
         store(node->type);
         inc(node->type);
         return;
+    case ND_NOT:
+        gen(node->lhs);
+        printf("  pop rax\n");
+        // RAX=0であれば1にする
+        printf("  cmp rax, 0\n");
+        printf("  sete al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
+        return;
     case ND_IF: {
         int seq_num = label_seq_num++;
         if (node->els) {

@@ -725,7 +725,7 @@ Node *cast() {
 
     return unary();
 }
-// unary = ("+" | "-" | "*" | "&")? cast | ("++" | "--") cast | postfix
+// unary = ("+" | "-" | "*" | "&" | "!")? cast | ("++" | "--") cast | postfix
 Node *unary() {
     if (consume("+"))
         return cast();
@@ -735,6 +735,8 @@ Node *unary() {
         return new_unary(ND_DEREF, cast());
     if (consume("&"))
         return new_unary(ND_ADDR, cast());
+    if (consume("!"))
+        return new_unary(ND_NOT, cast());
     if (consume("++"))
         return new_unary(ND_PRE_INC, cast());
     if (consume("--"))

@@ -72,6 +72,8 @@ void add_type(Node *node) {
     case ND_NE:
     case ND_LT:
     case ND_LE:
+    case ND_NUM:
+    case ND_NOT:
         node->type = int_type;
         break;
     case ND_VAR:
@@ -82,9 +84,6 @@ void add_type(Node *node) {
         break;
     case ND_MEMBER:
         node->type = node->member->type;
-        break;
-    case ND_NUM:
-        node->type = int_type;
         break;
     case ND_PTR_ADD:
     case ND_PTR_SUB:
