@@ -543,6 +543,7 @@ Node *stmt() {
 //       | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
 //       | "break" ";"
+//       | "continue" ";"
 //       | declaration
 //       | expr ";"
 Node *stmt2() {
@@ -623,6 +624,11 @@ Node *stmt2() {
     if (consume("break")) {
         expect(";");
         return new_node(ND_BREAK);
+    }
+
+    if (consume("continue")) {
+        expect(";");
+        return new_node(ND_CONTINUE);
     }
 
     if (is_type()) {

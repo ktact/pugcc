@@ -3,6 +3,7 @@
 // ラベルの通し番号
 static int label_seq_num = 0;
 static int break_seq_num;
+static int continue_seq_num;
 // 関数呼び出しの引数を積むレジスタ
 static char *_1byte_arg_regs[] = { "dil", "sil", "dl",  "cl",  "r8b", "r9b" };
 static char *_2byte_arg_regs[] = { "di",  "si",  "dx",  "cx",  "r8w", "r9w" };
@@ -250,24 +251,27 @@ static void gen(Node *node) {
     case ND_WHILE: {
         int seq_num = label_seq_num++;
         int brk_num = break_seq_num;
-        break_seq_num = seq_num;
+        int cnt_num = continue_seq_num;
+        break_seq_num = continue_seq_num = seq_num;
 
-        printf(".L.begin.%d:\n", seq_num);
+        printf(".L.continue.%d:\n", seq_num);
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je  .L.break.%d\n", seq_num);
         gen(node->then);
-        printf("  jmp .L.begin.%d\n", seq_num);
+        printf("  jmp .L.continue.%d\n", seq_num);
         printf(".L.break.%d:\n", seq_num);
 
-        break_seq_num = brk_num;
+        break_seq_num    = brk_num;
+        continue_seq_num = cnt_num;
         return;
     }
     case ND_FOR: {
         int seq_num = label_seq_num++;
-        int brk_num = break_seq_num++;
-        break_seq_num = seq_num;
+        int brk_num = break_seq_num;
+        int cnt_num = continue_seq_num;
+        break_seq_num = continue_seq_num = seq_num;
 
         if (node->init)
             gen(node->init);
@@ -279,12 +283,14 @@ static void gen(Node *node) {
             printf("  je  .L.break.%d\n", seq_num);
         }
         gen(node->then);
+        printf(".L.continue.%d:\n", seq_num);
         if (node->inc)
             gen(node->inc);
         printf("  jmp .L.begin.%d\n", seq_num);
         printf(".L.break.%d:\n", seq_num);
 
-        break_seq_num = brk_num;
+        break_seq_num    = brk_num;
+        continue_seq_num = cnt_num;
 
         return;
     }
@@ -295,6 +301,9 @@ static void gen(Node *node) {
         return;
     case ND_BREAK:
         printf("  jmp .L.break.%d\n", break_seq_num);
+        return;
+    case ND_CONTINUE:
+        printf("  jmp .L.continue.%d\n", continue_seq_num);
         return;
     case ND_FUNCCALL: {
         int number_of_args = 0;
