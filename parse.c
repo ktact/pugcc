@@ -529,6 +529,7 @@ Node *stmt() {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
+//       | "break" ";"
 //       | declaration
 //       | expr ";"
 Node *stmt2() {
@@ -604,6 +605,11 @@ Node *stmt2() {
         node->body = head.next;
         add_type(node);
         return node;
+    }
+
+    if (consume("break")) {
+        expect(";");
+        return new_node(ND_BREAK);
     }
 
     if (is_type()) {

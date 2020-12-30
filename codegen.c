@@ -2,6 +2,7 @@
 
 // ラベルの通し番号
 static int label_seq_num = 0;
+static int break_seq_num;
 // 関数呼び出しの引数を積むレジスタ
 static char *_1byte_arg_regs[] = { "dil", "sil", "dl",  "cl",  "r8b", "r9b" };
 static char *_2byte_arg_regs[] = { "di",  "si",  "dx",  "cx",  "r8w", "r9w" };
@@ -242,18 +243,26 @@ static void gen(Node *node) {
     }
     case ND_WHILE: {
         int seq_num = label_seq_num++;
+        int brk_num = break_seq_num;
+        break_seq_num = seq_num;
+
         printf(".L.begin.%d:\n", seq_num);
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L.end.%d\n", seq_num);
+        printf("  je  .L.break.%d\n", seq_num);
         gen(node->then);
         printf("  jmp .L.begin.%d\n", seq_num);
-        printf(".L.end.%d:\n", seq_num);
+        printf(".L.break.%d:\n", seq_num);
+
+        break_seq_num = brk_num;
         return;
     }
     case ND_FOR: {
         int seq_num = label_seq_num++;
+        int brk_num = break_seq_num++;
+        break_seq_num = seq_num;
+
         if (node->init)
             gen(node->init);
         printf(".L.begin.%d:\n", seq_num);
@@ -261,13 +270,15 @@ static void gen(Node *node) {
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je  .L.end.%d\n", seq_num);
+            printf("  je  .L.break.%d\n", seq_num);
         }
         gen(node->then);
         if (node->inc)
             gen(node->inc);
         printf("  jmp .L.begin.%d\n", seq_num);
-        printf(".L.end.%d:\n", seq_num);
+        printf(".L.break.%d:\n", seq_num);
+
+        break_seq_num = brk_num;
 
         return;
     }
@@ -275,6 +286,9 @@ static void gen(Node *node) {
     case ND_GNU_STMT_EXPR:
         for (Node *n = node->body; n; n = n->next)
             gen(n);
+        return;
+    case ND_BREAK:
+        printf("  jmp .L.break.%d\n", break_seq_num);
         return;
     case ND_FUNCCALL: {
         int number_of_args = 0;

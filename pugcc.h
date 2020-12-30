@@ -129,6 +129,7 @@ typedef enum {
     ND_WHILE,         // while
     ND_FOR,           // for
     ND_BLOCK,         // {...}
+    ND_BREAK,         // break
     ND_FUNCCALL,      // function()
     ND_EXPR_STMT,     // expression statement
     ND_GNU_STMT_EXPR, // GNU statement expression
