@@ -245,8 +245,11 @@ static Type *abstract_declarator(Type *type) {
 static Type *type_suffix(Type *type) {
     if (!consume("["))
         return type;
-    int size = expect_number();
-    expect("]");
+    int size = 0;
+    if (!consume("]")) {
+        size = expect_number();
+        expect("]");
+    }
 
     type = type_suffix(type);
     return array_of(type, size);
@@ -446,6 +449,13 @@ static VarList *read_func_param() {
     char *name = NULL;
     type = declarator(type, &name);
     type = type_suffix(type);
+
+    /*
+     * 関数の引数において"T型の配列"は"Tへのポインタ"に変換される。
+     * ex) *argv => **argv
+     */
+    if (type->kind == ARRAY)
+        type = pointer_to(type->base);
 
     VarList *vl = calloc(1, sizeof(VarList));
     vl->var = new_local_var(name, type);

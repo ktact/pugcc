@@ -30,6 +30,7 @@ int *g1_ptr() {
   return &g1;
 }
 void voidfn() {}
+int param_decay(int x[]) { return x[0]; }
 int assert(long expected, long actual, char *code) {
     if (expected == actual) {
         printf("%s => %ld\n", code, actual);
@@ -336,6 +337,8 @@ int main() {
     assert(4, ({ int i=0; while (1) { while(1) break; if (i++ == 3) break; } i; }), "int i=0; while { if (i == 3) break; } i;");
 
     voidfn();
+
+    assert(3, ({ int x[2]; x[0]=3; param_decay(x); }), "int x[2]; x[0]=3; param_decay(x);");
 
     printf("OK\n");
 
