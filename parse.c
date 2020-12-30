@@ -150,6 +150,8 @@ Node *stmt();
 Node *stmt2();
 Node *expr();
 Node *assign();
+Node *logand();
+Node *logor();
 Node *equality();
 Node *relational();
 Node *add();
@@ -627,9 +629,27 @@ Node *expr() {
 
 // assign = equality ("=" assign)?
 Node *assign() {
-    Node *node = equality();
+    Node *node = logor();
     if (consume("="))
         node = new_binary(ND_ASSIGN, node, assign());
+    return node;
+}
+
+// logor = logand ("||" logand)*
+Node *logor() {
+    Node *node = logand();
+    while (consume("||"))
+        node = new_binary(ND_LOGOR, node, logand());
+
+    return node;
+}
+
+// logand = equality ("&&" equality)*
+Node *logand() {
+    Node *node = equality();
+    while (consume("&&"))
+        node = new_binary(ND_LOGAND, node, equality());
+
     return node;
 }
 

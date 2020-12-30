@@ -136,6 +136,8 @@ typedef enum {
     ND_ADDR,          // &x
     ND_DEREF,         // *x
     ND_NOT,           // !
+    ND_LOGAND,        // &&
+    ND_LOGOR,         // ||
     ND_RETURN,        // return
     ND_NOP,           // Empty statement
 } NodeKind;

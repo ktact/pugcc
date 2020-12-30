@@ -74,6 +74,8 @@ void add_type(Node *node) {
     case ND_LE:
     case ND_NUM:
     case ND_NOT:
+    case ND_LOGOR:
+    case ND_LOGAND:
         node->type = int_type;
         break;
     case ND_VAR:
