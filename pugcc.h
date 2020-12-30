@@ -137,6 +137,7 @@ typedef enum {
     ND_ADDR,          // &x
     ND_DEREF,         // *x
     ND_NOT,           // !
+    ND_BITNOT,        // ~
     ND_LOGAND,        // &&
     ND_LOGOR,         // ||
     ND_RETURN,        // return

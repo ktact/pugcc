@@ -94,6 +94,7 @@ void add_type(Node *node) {
     case ND_PRE_DEC:
     case ND_POST_INC:
     case ND_POST_DEC:
+    case ND_BITNOT:
         node->type = node->lhs->type;
         break;
     case ND_ADDR: {
