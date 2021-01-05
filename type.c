@@ -6,6 +6,7 @@ Type *char_type  = &(Type){ CHAR,  1, 1 };
 Type *short_type = &(Type){ SHORT, 2, 2 };
 Type *int_type   = &(Type){ INT,   4, 4 };
 Type *long_type  = &(Type){ LONG,  8, 8 };
+Type *enum_type  = &(Type){ ENUM,  4, 4 };
 
 int align_to(int n, int align) {
     return (n + align -1) & ~(align - 1);
@@ -37,6 +38,7 @@ Type *func_type(Type *return_type) {
     type->return_type = return_type;
     return type;
 }
+
 bool is_pointer(Node *node) {
     return node->kind == ND_VAR && node->type->kind == PTR;
 }

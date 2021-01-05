@@ -34,7 +34,7 @@ typedef struct Member Member;
 
 // 型を表す型
 struct Type {
-    enum { VOID, BOOL, CHAR, SHORT, INT, LONG, PTR, ARRAY, STRUCT, FUNC } kind;
+    enum { VOID, BOOL, CHAR, SHORT, INT, LONG, ENUM, PTR, ARRAY, STRUCT, FUNC } kind;
     int size;
     int align;
     int array_size;
@@ -71,6 +71,8 @@ extern Type *short_type;
 extern Type *int_type;
 // long型の宣言
 extern Type *long_type;
+// enum型の宣言
+extern Type *enum_type;
 // 関数型の宣言
 extern Type *func_type(Type *return_type);
 // 指定型の配列型を得る関数の宣言
@@ -89,6 +91,7 @@ struct Var {
     char *contents;
     int content_len;
     bool  is_local;
+    int enum_val;
 };
 
 typedef struct VarList VarList;
