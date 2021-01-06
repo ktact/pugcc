@@ -6,6 +6,8 @@ static VarList *globals = NULL;
 static VarList *var_scope = NULL;
 static TagList *tag_scope = NULL;
 
+static Node *current_switch;
+
 static Scope *enter_scope(void) {
     Scope *sc = calloc(1, sizeof(Scope));
     sc->var_scope = var_scope;
@@ -607,6 +609,9 @@ Node *stmt() {
 
 // stmt2 = "return" expr ";"
 //       | "if" "(" expr ")" stmt ("else" stmt)?
+//       | "switch" "(" expr ")" stmt
+//       | "case" num ":" stmt
+//       | "default" ":" stmt
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
@@ -631,6 +636,38 @@ Node *stmt2() {
         if (consume("else"))
             node->els = stmt();
         add_type(node);
+        return node;
+    }
+
+    if (consume("switch")) {
+        Node *node = new_node(ND_SWITCH);
+        expect("(");
+        node->cond = expr();
+        expect(")");
+
+        Node *sw = current_switch;
+        current_switch = node;
+        node->then = stmt();
+        current_switch = sw;
+        return node;
+    }
+
+    if (consume("case")) {
+        int val = expect_number();
+        expect(":");
+
+        Node *node = new_unary(ND_CASE, stmt());
+        node->val = val;
+        node->case_next = current_switch->case_next;
+        current_switch->case_next = node;
+        return node;
+    }
+
+    if (consume("default")) {
+        expect(":");
+
+        Node *node = new_unary(ND_CASE, stmt());
+        current_switch->default_case = node;
         return node;
     }
 

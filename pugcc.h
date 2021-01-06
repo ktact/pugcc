@@ -132,6 +132,8 @@ typedef enum {
     ND_IF,            // if
     ND_WHILE,         // while
     ND_FOR,           // for
+    ND_SWITCH,        // switch
+    ND_CASE,          // case
     ND_BLOCK,         // {...}
     ND_BREAK,         // break
     ND_CONTINUE,      // continue
@@ -170,6 +172,10 @@ struct Node {
     Node *next;
     long val;      // kindがND_NUMの場合のみ使う
     Var *var;
+    Node *case_next;
+    Node *default_case;
+    int case_label;
+    int case_end_label;
     Type *type;    // 変数の型; kindがND_VARの場合のみ使う
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_VARの場合のみ使う
     char *funcname; // kindがND_FUNCCALLの場合のみ使う

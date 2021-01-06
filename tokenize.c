@@ -129,7 +129,7 @@ static bool is_alnum(char c) {
 }
 
 static int reserved_word(char *p) {
-    char *keywords[] = { "return", "if", "else", "while", "for", "void", "_Bool", "char", "short", "int", "long", "enum", "struct", "typedef", "sizeof", "break", "continue" };
+    char *keywords[] = { "return", "if", "else", "while", "for", "void", "_Bool", "char", "short", "int", "long", "enum", "struct", "typedef", "sizeof", "break", "continue", "switch", "case", "default" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))
@@ -304,7 +304,7 @@ Token *tokenize() {
             continue;
         }
 
-        if (strchr("+-*/&(){}<>=;,[].!~^|", *p)) {
+        if (strchr("+-*/&(){}<>=;,[].!~^|:", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
