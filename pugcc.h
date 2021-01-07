@@ -122,6 +122,12 @@ typedef enum {
     ND_PRE_DEC,       // --x
     ND_POST_INC,      // x++
     ND_POST_DEC,      // x--
+    ND_ADD_EQ,        // +=
+    ND_PTR_ADD_EQ,    // +=
+    ND_SUB_EQ,        // -=
+    ND_PTR_SUB_EQ,    // -=
+    ND_MUL_EQ,        // *=
+    ND_DIV_EQ,        // /=
     ND_VAR,           // Local/Global Variable
     ND_EQ,            // ==
     ND_NE,            // !=

@@ -757,11 +757,36 @@ Node *expr() {
     return node;
 }
 
-// assign = logor ("=" assign)?
+// assign    = logor (assign-op assign)?
+// assign-op = "=" | "+=" | "-=" | "*=" | "/="
 Node *assign() {
     Node *node = logor();
+
     if (consume("="))
-        node = new_binary(ND_ASSIGN, node, assign());
+        return new_binary(ND_ASSIGN, node, assign());
+
+    if (consume("*="))
+        return new_binary(ND_MUL_EQ, node, assign());
+
+    if (consume("/="))
+        return new_binary(ND_DIV_EQ, node, assign());
+
+    if (consume("+=")) {
+        add_type(node);
+        if (node->type->base)
+            return new_binary(ND_PTR_ADD_EQ, node, assign());
+        else
+            return new_binary(ND_ADD_EQ, node, assign());
+    }
+
+    if (consume("-=")) {
+        add_type(node);
+        if (node->type->base)
+            return new_binary(ND_PTR_SUB_EQ, node, assign());
+        else
+            return new_binary(ND_SUB_EQ, node, assign());
+    }
+
     return node;
 }
 

@@ -435,6 +435,19 @@ static void gen(Node *node) {
         printf("  push rax\n");
         return;
     }
+    case ND_ADD_EQ:
+    case ND_PTR_ADD_EQ:
+    case ND_SUB_EQ:
+    case ND_PTR_SUB_EQ:
+    case ND_MUL_EQ:
+    case ND_DIV_EQ:
+        gen_lval(node->lhs);
+        printf("  push [rsp]\n");
+        load(node->lhs->type);
+        gen(node->rhs);
+        gen_binary(node);
+        store(node->type);
+        break;
     case ND_COMMA_OP:
         gen(node->lhs);
         gen(node->rhs);
