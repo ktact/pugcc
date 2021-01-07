@@ -64,6 +64,76 @@ static void dec(Type *type) {
     printf("  push rax\n");
 }
 
+static void gen_binary(Node *node) {
+    printf("  pop rdi\n");
+    printf("  pop rax\n");
+
+    switch (node->kind) {
+    case ND_ADD:
+        printf("  add rax, rdi\n");
+        break;
+    case ND_SUB:
+        printf("  sub rax, rdi\n");
+        break;
+    case ND_PTR_ADD:
+        printf("  imul rdi, %d\n", node->lhs->type->base->size);
+        printf("  add rax, rdi\n");
+        break;
+    case ND_PTR_SUB:
+        printf("  imul rdi, %d\n", node->lhs->type->base->size);
+        printf("  sub rax, rdi\n");
+        break;
+    case ND_PTR_DIFF:
+        // アドレスの値を引いた後にそのポインタが指す変数の型のバイト数で割る
+        printf("  sub rax, rdi\n");
+        printf("  cqo\n");
+        if (is_array(node->lhs))
+            printf("  imul rdi, %d\n", node->lhs->type->base->size);
+        else
+            printf("  mov rdi, 4\n");
+        printf("  idiv rdi\n");
+        break;
+    case ND_MUL:
+        printf("  imul rax, rdi\n");
+        break;
+    case ND_DIV:
+        printf("  cqo\n");
+        printf("  idiv rdi\n");
+        break;
+    case ND_BITAND:
+        printf("  and rax, rdi\n");
+        break;
+    case ND_BITOR:
+        printf("  or rax, rdi\n");
+        break;
+    case ND_BITXOR:
+        printf("  xor rax, rdi\n");
+        break;
+    case ND_EQ:
+        printf("  cmp rax, rdi\n");
+        printf("  sete al\n");
+        printf("  movzb rax, al\n");
+        break;
+    case ND_NE:
+        printf("  cmp rax, rdi\n");
+        printf("  setne al\n");
+        printf("  movzb rax, al\n");
+        break;
+    case ND_LT:
+        printf("  cmp rax, rdi\n");
+        printf("  setl al\n");
+        printf("  movzb rax, al\n");
+        break;
+    case ND_LE:
+        printf("  cmp rax, rdi\n");
+        printf("  setle al\n");
+        printf("  movzb rax, al\n");
+        break;
+    }
+
+    printf("  push rax\n");
+}
+
 static void gen_addr(Var *var) {
     if (var->is_local) {
         printf("  lea rax, [rbp-%d]\n", var->offset);
@@ -393,73 +463,7 @@ static void gen(Node *node) {
     gen(node->lhs);
     gen(node->rhs);
 
-    printf("  pop rdi\n");
-    printf("  pop rax\n");
-
-    switch (node->kind) {
-    case ND_ADD:
-        printf("  add rax, rdi\n");
-        break;
-    case ND_SUB:
-        printf("  sub rax, rdi\n");
-        break;
-    case ND_PTR_ADD:
-        printf("  imul rdi, %d\n", node->lhs->type->base->size);
-        printf("  add rax, rdi\n");
-        break;
-    case ND_PTR_SUB:
-        printf("  imul rdi, %d\n", node->lhs->type->base->size);
-        printf("  sub rax, rdi\n");
-        break;
-    case ND_PTR_DIFF:
-        // アドレスの値を引いた後にそのポインタが指す変数の型のバイト数で割る
-        printf("  sub rax, rdi\n");
-        printf("  cqo\n");
-        if (is_array(node->lhs))
-            printf("  imul rdi, %d\n", node->lhs->type->base->size);
-        else
-            printf("  mov rdi, 4\n");
-        printf("  idiv rdi\n");
-        break;
-    case ND_MUL:
-        printf("  imul rax, rdi\n");
-        break;
-    case ND_DIV:
-        printf("  cqo\n");
-        printf("  idiv rdi\n");
-        break;
-    case ND_BITAND:
-        printf("  and rax, rdi\n");
-        break;
-    case ND_BITOR:
-        printf("  or rax, rdi\n");
-        break;
-    case ND_BITXOR:
-        printf("  xor rax, rdi\n");
-        break;
-    case ND_EQ:
-        printf("  cmp rax, rdi\n");
-        printf("  sete al\n");
-        printf("  movzb rax, al\n");
-        break;
-    case ND_NE:
-        printf("  cmp rax, rdi\n");
-        printf("  setne al\n");
-        printf("  movzb rax, al\n");
-        break;
-    case ND_LT:
-        printf("  cmp rax, rdi\n");
-        printf("  setl al\n");
-        printf("  movzb rax, al\n");
-        break;
-    case ND_LE:
-        printf("  cmp rax, rdi\n");
-        printf("  setle al\n");
-        printf("  movzb rax, al\n");
-        break;
-    }
-
-    printf("  push rax\n");
+    gen_binary(node);
 }
 
 static void emit_data(Program *program) {
