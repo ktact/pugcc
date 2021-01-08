@@ -95,6 +95,8 @@ void add_type(Node *node) {
     case ND_PTR_ADD:
     case ND_PTR_SUB:
     case ND_ASSIGN:
+    case ND_SHL:
+    case ND_SHR:
     case ND_PRE_INC:
     case ND_PRE_DEC:
     case ND_POST_INC:

@@ -175,6 +175,7 @@ Node *bitor();
 Node *bitxor();
 Node *equality();
 Node *relational();
+Node *shift();
 Node *add();
 Node *mul();
 Node *cast();
@@ -849,19 +850,33 @@ Node *equality() {
     }
 }
 
-// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+// relational = shift ("<" shift | "<=" shift | ">" shift | ">=" shift)*
 Node *relational() {
-    Node *node = add();
+    Node *node = shift();
 
     for (;;) {
         if (consume("<"))
-            node = new_binary(ND_LT, node, add());
+            node = new_binary(ND_LT, node, shift());
         else if (consume("<="))
-            node = new_binary(ND_LE, node, add());
+            node = new_binary(ND_LE, node, shift());
         else if (consume(">"))
-            node = new_binary(ND_LT, add(), node);
+            node = new_binary(ND_LT, shift(), node);
         else if (consume(">="))
-            node = new_binary(ND_LE, add(), node);
+            node = new_binary(ND_LE, shift(), node);
+        else
+            return node;
+    }
+}
+
+// shift = add ("<<" add | ">>" add)*
+Node *shift() {
+    Node *node = add();
+
+    for (;;) {
+        if (consume("<<"))
+            node = new_binary(ND_SHL, node, add());
+        else if (consume(">>"))
+            node = new_binary(ND_SHR, node, add());
         else
             return node;
     }
