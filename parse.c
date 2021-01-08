@@ -168,6 +168,7 @@ Node *stmt();
 Node *stmt2();
 Node *expr();
 Node *assign();
+Node *conditional();
 Node *logand();
 Node *logor();
 Node *bitand();
@@ -758,10 +759,10 @@ Node *expr() {
     return node;
 }
 
-// assign    = logor (assign-op assign)?
+// assign    = conditional (assign-op assign)?
 // assign-op = "=" | "+=" | "-=" | "*=" | "/="
 Node *assign() {
-    Node *node = logor();
+    Node *node = conditional();
 
     if (consume("="))
         return new_binary(ND_ASSIGN, node, assign());
@@ -789,6 +790,22 @@ Node *assign() {
     }
 
     return node;
+}
+
+// conditional = logor ("?" expr ":" condtional)?
+Node *conditional() {
+    Node *node = logor();
+
+    if (!consume("?"))
+        return node;
+
+    Node *ternary = new_node(ND_TERNARY);
+    ternary->cond = node;
+    ternary->then = expr();
+    expect(":");
+    ternary->els  = conditional();
+
+    return ternary;
 }
 
 // logor = logand ("||" logand)*

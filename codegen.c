@@ -225,6 +225,20 @@ static void gen(Node *node) {
         gen(node->rhs);
         store(node->type);
         return;
+    case ND_TERNARY: {
+        int seq_num = label_seq_num++;
+
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je  .L.else.%d\n", seq_num);
+        gen(node->then);
+        printf("  jmp .L.end.%d\n", seq_num);
+        printf(".L.else.%d:\n", seq_num);
+        gen(node->els);
+        printf(".L.end.%d:\n", seq_num);
+        return;
+    }
     case ND_PRE_INC:
         gen_lval(node->lhs);
         printf("  push [rsp]\n");

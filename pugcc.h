@@ -117,6 +117,7 @@ typedef enum {
     ND_MUL,           // *
     ND_DIV,           // /
     ND_ASSIGN,        // =
+    ND_TERNARY,       // ?:
     ND_COMMA_OP,      // ,
     ND_PRE_INC,       // ++x
     ND_PRE_DEC,       // --x
