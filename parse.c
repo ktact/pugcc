@@ -167,6 +167,7 @@ Function *func_decl();
 Node *stmt();
 Node *stmt2();
 Node *expr();
+long constant_expr();
 Node *assign();
 Node *conditional();
 Node *logand();
@@ -268,13 +269,13 @@ static Type *abstract_declarator(Type *type) {
     return type_suffix(type);
 }
 
-// type_suffix = ("[" num "]" type_suffix)?
+// type_suffix = ("[" constant_expr "]" type_suffix)?
 static Type *type_suffix(Type *type) {
     if (!consume("["))
         return type;
     int size = 0;
     if (!consume("]")) {
-        size = expect_number();
+        size = constant_expr();
         expect("]");
     }
 
@@ -383,8 +384,8 @@ static bool consume_end() {
     return false;
 }
 
-// enum_specifier = "enum" ident
-//                | "enum" ident? "{" enum-list? "}"
+// enum_list = enum_elem ("," enum_elem)* ","?
+// enum_elem = ident ("=" constant_expr)?
 static Type *enum_specifier() {
     expect("enum");
     Type *type = enum_type;
@@ -405,7 +406,7 @@ static Type *enum_specifier() {
     for (;;) {
         char *name = expect_ident();
         if (consume("="))
-            count = expect_number();
+            count = constant_expr();
 
         push_enum_field_to_scope(name, type, count++);
 
@@ -612,7 +613,7 @@ Node *stmt() {
 // stmt2 = "return" expr ";"
 //       | "if" "(" expr ")" stmt ("else" stmt)?
 //       | "switch" "(" expr ")" stmt
-//       | "case" num ":" stmt
+//       | "case" constant_expr ":" stmt
 //       | "default" ":" stmt
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
@@ -655,7 +656,7 @@ Node *stmt2() {
     }
 
     if (consume("case")) {
-        int val = expect_number();
+        int val = constant_expr();
         expect(":");
 
         Node *node = new_unary(ND_CASE, stmt());
@@ -757,6 +758,55 @@ Node *expr() {
     }
 
     return node;
+}
+
+static long eval(Node *node) {
+    switch (node->kind) {
+    case ND_ADD:
+        return eval(node->lhs) + eval(node->rhs);
+    case ND_SUB:
+        return eval(node->lhs) - eval(node->rhs);
+    case ND_MUL:
+        return eval(node->lhs) * eval(node->rhs);
+    case ND_DIV:
+        return eval(node->lhs) / eval(node->rhs);
+    case ND_BITAND:
+        return eval(node->lhs) & eval(node->rhs);
+    case ND_BITOR:
+        return eval(node->lhs) | eval(node->rhs);
+    case ND_BITXOR:
+        return eval(node->lhs) | eval(node->rhs);
+    case ND_SHL:
+        return eval(node->lhs) << eval(node->rhs);
+    case ND_SHR:
+        return eval(node->lhs) >> eval(node->rhs);
+    case ND_EQ:
+        return eval(node->lhs) == eval(node->rhs);
+    case ND_NE:
+        return eval(node->lhs) != eval(node->rhs);
+    case ND_LT:
+        return eval(node->lhs) < eval(node->rhs);
+    case ND_LE:
+        return eval(node->lhs) <= eval(node->rhs);
+    case ND_TERNARY:
+        return eval(node->cond) ? eval(node->then) : eval(node->els);
+    case ND_COMMA_OP:
+        return eval(node->rhs);
+    case ND_NOT:
+        return !eval(node->lhs);
+    case ND_BITNOT:
+        return ~eval(node->lhs);
+    case ND_LOGAND:
+        return eval(node->lhs) && eval(node->rhs);
+    case ND_LOGOR:
+        return eval(node->lhs) || eval(node->rhs);
+    case ND_NUM:
+        return node->val;
+    }
+}
+
+long constant_expr() {
+    return eval(conditional());
 }
 
 // assign    = conditional (assign-op assign)?
