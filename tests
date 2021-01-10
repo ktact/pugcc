@@ -31,6 +31,9 @@ int *g1_ptr() {
 }
 void voidfn() {}
 int param_decay(int x[]) { return x[0]; }
+int;
+struct { char a; int b;};
+typedef struct { char a; int b; } MyType;
 int assert(long expected, long actual, char *code) {
     if (expected == actual) {
         printf("%s => %ld\n", code, actual);
@@ -275,6 +278,7 @@ int main() {
     assert(1, ({ typedef struct {int a;} t; t x; x.a=1; x.a; }), "typedef struct {int a;} t; t x; x.a=1; x.a;");
     assert(1, ({ typedef int t; t t=1; t; }), "typedef int t; t t=1; t;");
     assert(2, ({ typedef struct {int a;} t; { typedef int t; } t x; x.a=2; x.a; }), "typedef struct {int a;} t; { typedef int t; } t x; x.a=2; x.a;");
+    assert(3, ({ MyType MyType; MyType.a=3; MyType.a; }), "MyType MyType; MyType.a=3; MyType.a;");
 
     assert(24, ({ int *x[3]; sizeof(x); }), "int *x[3]; sizeof(x);");
     assert(8, ({ int (*x)[3]; sizeof(x); }), "int (*x)[3]; sizeof(x);");

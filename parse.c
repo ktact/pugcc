@@ -426,15 +426,20 @@ static bool is_type() {
 }
 
 static bool is_function() {
+    bool is_function = false;
+
     // 本関数呼び出し時点でのトークンの読み出し位置を覚えておく
     Token *tok = token;
 
     // トークンを先読みして型、識別子、（であれば関数宣言であると判断する
     bool is_typedef = false;
     Type *type = basetype(&is_typedef);
-    char *func_name = NULL;
-    declarator(type, &func_name);
-    bool is_function = func_name && consume("(");
+
+    if (!consume(";")) {
+        char *func_name = NULL;
+        declarator(type, &func_name);
+        is_function = func_name && consume("(");
+    }
 
     // トークンの読み出し位置を元に戻す
     token = tok;
@@ -446,6 +451,9 @@ static bool is_function() {
 static void global_var() {
     bool is_typedef = false;
     Type *type = basetype(&is_typedef);
+    if (consume(";"))
+        return;
+
     char *name = NULL;
     type = declarator(type, &name);
     type = type_suffix(type);
