@@ -236,6 +236,9 @@ extern char *consume_ident();
 extern void expect(char *op);
 extern int expect_number();
 extern char *expect_ident();
+extern bool peek_end();
+extern bool consume_end();
+extern void expect_end();
 extern bool at_eof();
 extern void error_at(char *loc, char *fmt, ...);
 

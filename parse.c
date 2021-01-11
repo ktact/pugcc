@@ -375,15 +375,6 @@ static Node *struct_ref(Node *lhs) {
     return node;
 }
 
-static bool consume_end() {
-    Token *tok = token;
-    if (consume("}") || (consume(",") && consume("}")))
-        return true;
-
-    token = tok;
-    return false;
-}
-
 // enum_list = enum_elem ("," enum_elem)* ","?
 // enum_elem = ident ("=" constant_expr)?
 static Type *enum_specifier() {
@@ -465,6 +456,59 @@ static void global_var() {
         new_global_var(name, type, /* emit: */true);
 }
 
+typedef struct Designator Designator;
+struct Designator {
+    Designator *next;
+    int index;
+};
+
+static Node *refs_elem_of(Var *array, Designator *desg) {
+    if (!desg) return new_var_node(array);
+
+    Node *node = refs_elem_of(array, desg->next);
+    node = new_binary(ND_PTR_ADD, node, new_num_node(desg->index));
+    return new_unary(ND_DEREF, node);
+}
+
+static Node *assign_expr(Var *var, Designator *desg, Node *rhs) {
+    Node *lhs = refs_elem_of(var, desg);
+    Node *node = new_binary(ND_ASSIGN, lhs, rhs);
+    return new_unary(ND_EXPR_STMT, node);
+}
+
+// initializer = assign
+//             | "{" initializer_list ("," initializer_list)* ","? "}"
+static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg) {
+    if (type->kind == ARRAY) {
+        Var *array = var;
+        expect("{");
+
+        int i = 0;
+        do {
+            Designator nested_elem_desg = { desg, i++ };
+            cur = initializer_list(cur, array, type->base, &nested_elem_desg);
+        } while (!peek_end() && consume(","));
+
+        expect_end();
+
+        return cur;
+    }
+
+    cur->next = assign_expr(var, desg, assign());
+    return cur->next;
+}
+
+static Node *initializer(Var *var) {
+    Node head = {};
+
+    initializer_list(&head, var, var->type, NULL);
+
+    Node *node = new_node(ND_BLOCK);
+    node->body = head.next;
+
+    return node;
+}
+
 // declaration = basetype declarator type_suffix ("=" expr)? ";"
 //             | basetype ";"
 static Node *declaration() {
@@ -495,12 +539,10 @@ static Node *declaration() {
     }
 
     expect("=");
-    Node *lhs = new_var_node(var);
-    Node *rhs = expr();
+    Node *node = initializer(var);
     expect(";");
 
-    Node *node = new_binary(ND_ASSIGN, lhs, rhs);
-    return new_unary(ND_EXPR_STMT, node);
+    return node;
 }
 
 // program = ((type func_decl) | (type ident ("[" num "]")?))*

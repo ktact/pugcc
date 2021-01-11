@@ -112,6 +112,26 @@ char *expect_ident() {
     return strndup(t->str, t->len);
 }
 
+bool peek_end() {
+    Token *tok = token;
+    bool token_is_end = consume("}") || (consume(",") && consume("}"));
+    token = tok;
+    return token_is_end;
+}
+
+bool consume_end() {
+    Token *tok = token;
+    if (consume("}") || (consume(",") && consume("}")))
+        return true;
+    token = tok;
+    return false;
+}
+
+void expect_end() {
+    if (!consume_end())
+        expect("}");
+}
+
 bool at_eof() {
     return token->kind == TK_EOF;
 }
