@@ -476,20 +476,43 @@ static Node *assign_expr(Var *var, Designator *desg, Node *rhs) {
     return new_unary(ND_EXPR_STMT, node);
 }
 
-// initializer = assign
-//             | "{" initializer_list ("," initializer_list)* ","? "}"
+static Node *initialize_with_zero(Node *cur, Var *var, Type *type, Designator *desg) {
+    if (type->kind == ARRAY) {
+        Var *array = var;
+
+        for (int i = 0; i < type->array_size; i++) {
+            Designator next_elem_desg = { desg, i++ };
+            cur = initialize_with_zero(cur, array, type->base, &next_elem_desg);
+        }
+        return cur;
+    }
+
+    cur->next = assign_expr(var, desg, new_num_node(0));
+    return cur->next;
+}
+
+// initializer = assign_expr
+//             | "{" (initializer_list ("," initializer_list)* ",")? "}"
 static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg) {
     if (type->kind == ARRAY) {
         Var *array = var;
+
         expect("{");
 
         int i = 0;
-        do {
-            Designator nested_elem_desg = { desg, i++ };
-            cur = initializer_list(cur, array, type->base, &nested_elem_desg);
-        } while (!peek_end() && consume(","));
+        if (!peek("}")) {
+            do {
+                Designator next_elem_desg = { desg, i++ };
+                cur = initializer_list(cur, array, type->base, &next_elem_desg);
+            } while (!peek_end() && consume(","));
+        }
 
         expect_end();
+
+        while (i < type->array_size) {
+            Designator next_elem_desg = { desg, i++ };
+            cur = initialize_with_zero(cur, array, type->base, &next_elem_desg);
+        }
 
         return cur;
     }
