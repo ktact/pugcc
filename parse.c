@@ -494,6 +494,27 @@ static Node *initialize_with_zero(Node *cur, Var *var, Type *type, Designator *d
 // initializer = assign_expr
 //             | "{" (initializer_list ("," initializer_list)* ",")? "}"
 static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg) {
+    if (type->kind == ARRAY && type->base->kind == CHAR && token->kind == TK_STR) {
+        Token *tok = token;
+        token = token->next;
+
+        int len = (type->array_size < tok->len) ? type->array_size : tok->len;
+
+        for (int i = 0; i < len; i++) {
+            Designator next_elem_desg = { desg, i };
+            Node *rhs = new_num_node(tok->str[i]);
+            cur->next = assign_expr(var, &next_elem_desg, rhs);
+            cur = cur->next;
+        }
+
+        for (int i = len; i < type->array_size; i++) {
+            Designator next_elem_desg = { desg, i };
+            cur = initialize_with_zero(cur, var, type->base, &next_elem_desg);
+        }
+
+        return cur;
+    }
+
     if (type->kind == ARRAY) {
         Var *array = var;
 
