@@ -459,13 +459,21 @@ static void global_var() {
 typedef struct Designator Designator;
 struct Designator {
     Designator *next;
-    int index;
+    int index;      // for array
+    Member *member; // for struct
 };
 
-static Node *refs_elem_of(Var *array, Designator *desg) {
-    if (!desg) return new_var_node(array);
+static Node *refs_elem_of(Var *var, Designator *desg) {
+    if (!desg) return new_var_node(var);
 
-    Node *node = refs_elem_of(array, desg->next);
+    Node *node = refs_elem_of(var, desg->next);
+
+    if (desg->member) {
+        node = new_unary(ND_MEMBER, node);
+        node->member = desg->member;
+        return node;
+    }
+
     node = new_binary(ND_PTR_ADD, node, new_num_node(desg->index));
     return new_unary(ND_DEREF, node);
 }
@@ -535,6 +543,28 @@ static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg)
             cur = initialize_with_zero(cur, array, type->base, &next_elem_desg);
         }
 
+        return cur;
+    }
+
+    if (type->kind == STRUCT) {
+        Member *member = type->members;
+
+        expect("{");
+
+        if (!peek("}")) {
+            do {
+                Designator next_elem_desg = { desg, 0, member };
+                cur = initializer_list(cur, var, member->type, &next_elem_desg);
+                member = member->next;
+            } while (!peek_end() && consume(","));
+        }
+
+        expect_end();
+
+        for (; member; member = member->next) {
+            Designator next_elem_desg = { desg, 0, member };
+            cur = initialize_with_zero(cur, var, member->type, &next_elem_desg);
+        }
         return cur;
     }
 
