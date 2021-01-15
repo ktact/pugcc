@@ -485,8 +485,10 @@ static void gen(Node *node) {
           load(node->type);
         return;
     case ND_RETURN:
-        gen(node->lhs);
-        printf("  pop rax\n");
+        if (node->lhs) {
+            gen(node->lhs);
+            printf("  pop rax\n");
+        }
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         printf("  ret\n");

@@ -739,7 +739,7 @@ Node *stmt() {
     return node;
 }
 
-// stmt2 = "return" expr ";"
+// stmt2 = "return" expr? ";"
 //       | "if" "(" expr ")" stmt ("else" stmt)?
 //       | "switch" "(" expr ")" stmt
 //       | "case" constant_expr ":" stmt
@@ -754,6 +754,9 @@ Node *stmt() {
 //       | expr ";"
 Node *stmt2() {
     if (consume("return")) {
+        if (consume(";"))
+            return new_node(ND_RETURN);
+
         Node *node = new_unary(ND_RETURN, expr());
         add_type(node);
         expect(";");
