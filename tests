@@ -29,7 +29,7 @@ int subtract_char(char a, char b, char c) {
 int *g1_ptr() {
   return &g1;
 }
-void voidfn() {}
+void voidfn(void) {}
 int param_decay(int x[]) { return x[0]; }
 int;
 struct { char a; int b;};
