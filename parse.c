@@ -749,6 +749,7 @@ Node *stmt() {
 //       | "{" stmt* "}"
 //       | "break" ";"
 //       | "continue" ";"
+//       | ";"
 //       | declaration
 //       | expr ";"
 Node *stmt2() {
@@ -866,6 +867,10 @@ Node *stmt2() {
     if (consume("continue")) {
         expect(";");
         return new_node(ND_CONTINUE);
+    }
+
+    if (consume(";")) {
+        return new_node(ND_NOP);
     }
 
     if (is_type()) {

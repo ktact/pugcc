@@ -454,6 +454,8 @@ int main() {
     assert(0, ({ struct {int a; int b;} x={}; x.a; }), "struct {int a; int b;} x={}; x.a;");
     assert(0, ({ struct {int a; int b;} x={}; x.b; }), "struct {int a; int b;} x={}; x.b;");
 
+    ;
+
     printf("OK\n");
 
     return 0;
