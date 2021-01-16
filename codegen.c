@@ -4,6 +4,9 @@
 static int label_seq_num = 0;
 static int break_seq_num;
 static int continue_seq_num;
+
+static char *funcname;
+
 // 関数呼び出しの引数を積むレジスタ
 static char *_1byte_arg_regs[] = { "dil", "sil", "dl",  "cl",  "r8b", "r9b" };
 static char *_2byte_arg_regs[] = { "di",  "si",  "dx",  "cx",  "r8w", "r9w" };
@@ -431,6 +434,13 @@ static void gen(Node *node) {
     case ND_CONTINUE:
         printf("  jmp .L.continue.%d\n", continue_seq_num);
         return;
+    case ND_GOTO:
+        printf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
+        return;
+    case ND_LABEL:
+        printf(".L.label.%s.%s:\n", funcname, node->label_name);
+        gen(node->lhs);
+        return;
     case ND_FUNCCALL: {
         int number_of_args = 0;
         for (Node *arg = node->args; arg; arg = arg->next) {
@@ -525,6 +535,7 @@ static void emit_text(Program *program) {
     for (Function *f = program->functions; f; f = f->next) {
         printf(".global %s\n", f->name);
         printf("%s:\n", f->name);
+        funcname = f->name;
 
         // プロローグ
         printf("  push rbp\n");

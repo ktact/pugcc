@@ -144,6 +144,8 @@ typedef enum {
     ND_BLOCK,         // {...}
     ND_BREAK,         // break
     ND_CONTINUE,      // continue
+    ND_GOTO,          // goto
+    ND_LABEL,         // labled statement
     ND_FUNCCALL,      // function()
     ND_EXPR_STMT,     // expression statement
     ND_GNU_STMT_EXPR, // GNU statement expression
@@ -188,6 +190,7 @@ struct Node {
     Type *type;    // 変数の型; kindがND_VARの場合のみ使う
     int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_VARの場合のみ使う
     char *funcname; // kindがND_FUNCCALLの場合のみ使う
+    char *label_name;
 };
 
 // ノードがポインタ型であるか判定する関数の宣言
@@ -233,6 +236,7 @@ extern void error_at(char *loc, char *fmt, ...);
 extern bool consume(char *op);
 extern Token *peek(char *s);
 extern char *consume_ident();
+extern Token *consume_ident_and_return_consumed_token();
 extern void expect(char *op);
 extern int expect_number();
 extern char *expect_ident();

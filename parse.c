@@ -749,6 +749,8 @@ Node *stmt() {
 //       | "{" stmt* "}"
 //       | "break" ";"
 //       | "continue" ";"
+//       | "goto" ident ";"
+//       | ident ":" stmt
 //       | ";"
 //       | declaration
 //       | expr ";"
@@ -870,6 +872,23 @@ Node *stmt2() {
     if (consume("continue")) {
         expect(";");
         return new_node(ND_CONTINUE);
+    }
+
+    if (consume("goto")) {
+        Node *node = new_node(ND_GOTO);
+        node->label_name = expect_ident();
+        expect(";");
+        return node;
+    }
+
+    Token *tok;
+    if (tok = consume_ident_and_return_consumed_token()) {
+        if (consume(":")) {
+            Node *node = new_unary(ND_LABEL, stmt());
+            node->label_name = strndup(tok->str, tok->len);
+            return node;
+        }
+        token = tok;
     }
 
     if (consume(";")) {

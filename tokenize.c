@@ -83,6 +83,14 @@ char *consume_ident() {
     return strndup(t->str, t->len);
 }
 
+Token *consume_ident_and_return_consumed_token() {
+    if (token->kind != TK_IDENT)
+        return NULL;
+    Token *t = token;
+    token = token->next;
+    return t;
+}
+
 // 次のトークンが期待している記号の場合にはトークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char *op) {
@@ -149,7 +157,7 @@ static bool is_alnum(char c) {
 }
 
 static int reserved_word(char *p) {
-    char *keywords[] = { "return", "if", "else", "while", "for", "void", "_Bool", "char", "short", "int", "long", "enum", "struct", "typedef", "sizeof", "break", "continue", "switch", "case", "default" };
+    char *keywords[] = { "return", "if", "else", "while", "for", "void", "_Bool", "char", "short", "int", "long", "enum", "struct", "typedef", "sizeof", "break", "continue", "goto", "switch", "case", "default" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))
