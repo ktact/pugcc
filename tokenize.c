@@ -156,14 +156,21 @@ static bool is_alnum(char c) {
     return is_alpha(c) || ('0' <= c && c <= '9');
 }
 
-static int reserved_word(char *p) {
+static char *starts_with_reserved_word(char *p) {
     char *keywords[] = { "return", "if", "else", "while", "for", "void", "_Bool", "char", "short", "int", "long", "enum", "struct", "typedef", "sizeof", "break", "continue", "goto", "switch", "case", "default" };
     for (int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len = strlen(keywords[i]);
         if (startswith(p, keywords[i]) && !is_alnum(p[len]))
-            return len;
+            return keywords[i];
     }
-    return 0;
+
+    char *operators[] = { "<<=", ">>=", "==", "!=", "<=", ">=", "++", "--", "&&", "||", "+=", "-=", "*=", "/=", "<<", ">>", "->" };
+    for (int i = 0; i < sizeof(operators) / sizeof(*operators); i++) {
+        if (startswith(p, operators[i]))
+            return operators[i];
+    }
+
+    return NULL;
 }
 
 static char get_escape_char(char c) {
@@ -306,8 +313,9 @@ Token *tokenize() {
             continue;
         }
 
-        int len = 0;
-        if ((len = reserved_word(p)) > 0) {
+        char *keywords = starts_with_reserved_word(p);
+        if (keywords) {
+            int len = strlen(keywords);
             cur = new_token(TK_RESERVED, cur, p, len);
             p += len;
             continue;
@@ -322,13 +330,13 @@ Token *tokenize() {
             continue;
         }
 
-        if (startswith(p, "==") || startswith(p, "!=") ||
-            startswith(p, "<=") || startswith(p, ">=") ||
-            startswith(p, "++") || startswith(p, "--") ||
-            startswith(p, "&&") || startswith(p, "||") ||
-            startswith(p, "+=") || startswith(p, "-=") ||
-            startswith(p, "*=") || startswith(p, "/=") ||
-            startswith(p, "<<") || startswith(p, ">>") ||
+        if (startswith(p, "<<=") || startswith(p, ">>=") ||
+            startswith(p, "<=")  || startswith(p, ">=")  ||
+            startswith(p, "++")  || startswith(p, "--")  ||
+            startswith(p, "&&")  || startswith(p, "||")  ||
+            startswith(p, "+=")  || startswith(p, "-=")  ||
+            startswith(p, "*=")  || startswith(p, "/=")  ||
+            startswith(p, "<<")  || startswith(p, ">>")  ||
             startswith(p, "->")) {
             cur = new_token(TK_RESERVED, cur, p, 2);
             p += 2;

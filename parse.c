@@ -966,7 +966,7 @@ long constant_expr() {
 }
 
 // assign    = conditional (assign-op assign)?
-// assign-op = "=" | "+=" | "-=" | "*=" | "/="
+// assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "<<=" | ">>="
 Node *assign() {
     Node *node = conditional();
 
@@ -978,6 +978,12 @@ Node *assign() {
 
     if (consume("/="))
         return new_binary(ND_DIV_EQ, node, assign());
+
+    if (consume("<<="))
+        return new_binary(ND_SHL_EQ, node, assign());
+
+    if (consume(">>="))
+        return new_binary(ND_SHR_EQ, node, assign());
 
     if (consume("+=")) {
         add_type(node);

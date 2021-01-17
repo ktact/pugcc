@@ -129,6 +129,8 @@ typedef enum {
     ND_PTR_SUB_EQ,    // -=
     ND_MUL_EQ,        // *=
     ND_DIV_EQ,        // /=
+    ND_SHL_EQ,        // <<=
+    ND_SHR_EQ,        // >>=
     ND_VAR,           // Local/Global Variable
     ND_EQ,            // ==
     ND_NE,            // !=

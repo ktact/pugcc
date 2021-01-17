@@ -110,6 +110,8 @@ void add_type(Node *node) {
     case ND_PTR_SUB_EQ:
     case ND_MUL_EQ:
     case ND_DIV_EQ:
+    case ND_SHL_EQ:
+    case ND_SHR_EQ:
     case ND_BITNOT:
         node->type = node->lhs->type;
         break;
