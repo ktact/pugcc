@@ -131,6 +131,9 @@ typedef enum {
     ND_DIV_EQ,        // /=
     ND_SHL_EQ,        // <<=
     ND_SHR_EQ,        // >>=
+    ND_BITAND_EQ,     // &=
+    ND_BITOR_EQ,      // |=
+    ND_BITXOR_EQ,     // ^=
     ND_VAR,           // Local/Global Variable
     ND_EQ,            // ==
     ND_NE,            // !=

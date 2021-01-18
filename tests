@@ -426,6 +426,9 @@ int main() {
     assert(-1, -1, "-1");
     assert(-1, ({ int i=-1; i; }), "int i=-1; i;");
     assert(-1, ({ int i=-1; i>>=1; i; }), "int i=1; i>>1;");
+    assert(2, ({ int i=6; i&=3; i; }), "int i=6; i&=3; i;");
+    assert(7, ({ int i=6; i|=3; i; }), "int i=6; i|=3; i;");
+    assert(10, ({ int i=15; i^=5; i; }), "int 15; i^=5; i;");
 
     assert(2, 0?1:2, "0?1:2");
     assert(1, 1?1:2, "0?1:2");

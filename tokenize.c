@@ -164,7 +164,7 @@ static char *starts_with_reserved_word(char *p) {
             return keywords[i];
     }
 
-    char *operators[] = { "<<=", ">>=", "==", "!=", "<=", ">=", "++", "--", "&&", "||", "+=", "-=", "*=", "/=", "<<", ">>", "->" };
+    char *operators[] = { "<<=", ">>=", "==", "!=", "<=", ">=", "++", "--", "&&", "||", "&=", "|=", "^=", "+=", "-=", "*=", "/=", "<<", ">>", "->" };
     for (int i = 0; i < sizeof(operators) / sizeof(*operators); i++) {
         if (startswith(p, operators[i]))
             return operators[i];
@@ -327,19 +327,6 @@ Token *tokenize() {
             while (is_alnum(*p))
                 p++;
             cur = new_token(TK_IDENT, cur, q, p - q);
-            continue;
-        }
-
-        if (startswith(p, "<<=") || startswith(p, ">>=") ||
-            startswith(p, "<=")  || startswith(p, ">=")  ||
-            startswith(p, "++")  || startswith(p, "--")  ||
-            startswith(p, "&&")  || startswith(p, "||")  ||
-            startswith(p, "+=")  || startswith(p, "-=")  ||
-            startswith(p, "*=")  || startswith(p, "/=")  ||
-            startswith(p, "<<")  || startswith(p, ">>")  ||
-            startswith(p, "->")) {
-            cur = new_token(TK_RESERVED, cur, p, 2);
-            p += 2;
             continue;
         }
 
