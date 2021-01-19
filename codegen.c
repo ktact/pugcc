@@ -394,6 +394,25 @@ static void gen(Node *node) {
 
         return;
     }
+    case ND_DO: {
+        int seq_num = label_seq_num++;
+        int brk_num = break_seq_num;
+        int cnt_num = continue_seq_num;
+        break_seq_num = continue_seq_num = seq_num;
+
+        printf(".L.begin.%d:\n", seq_num);
+        gen(node->then);
+        printf(".L.continue.%d:\n", seq_num);
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  jne .L.begin.%d\n", seq_num);
+        printf(".L.break.%d:\n", seq_num);
+
+        break_seq_num    = brk_num;
+        continue_seq_num = cnt_num;
+        return;
+    }
     case ND_SWITCH: {
         int seq_num = label_seq_num++;
         int brk_num = break_seq_num;

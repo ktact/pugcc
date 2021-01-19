@@ -746,6 +746,7 @@ Node *stmt() {
 //       | "default" ":" stmt
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
+//       | "do" stmt "while" "(" expr ")" ";"
 //       | "{" stmt* "}"
 //       | "break" ";"
 //       | "continue" ";"
@@ -844,6 +845,17 @@ Node *stmt2() {
         add_type(node);
 
         leave_scope(sc);
+        return node;
+    }
+
+    if (consume("do")) {
+        Node *node = new_node(ND_DO);
+        node->then = stmt();
+        expect("while");
+        expect("(");
+        node->cond = expr();
+        expect(")");
+        expect(";");
         return node;
     }
 
