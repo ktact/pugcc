@@ -240,6 +240,7 @@ extern Token *tokenize();
 extern Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 extern void error(char *fmt, ...);
 extern void error_at(char *loc, char *fmt, ...);
+extern void error_tok(Token *tok, char *fmt, ...);
 extern bool consume(char *op);
 extern Token *peek(char *s);
 extern char *consume_ident();

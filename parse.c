@@ -198,7 +198,6 @@ void expect(char *op);
 int expect_number();
 char *expect_ident();
 bool at_eof();
-void error_at(char *loc, char *fmt, ...);
 
 // basetype = builtin_type | struct_decl | typedef-name
 // builtin_type = "void" | "_Bool" | "char" | "short" | "int" | "long"
@@ -208,10 +207,18 @@ static Type *basetype(StorageClass *sclass) {
     Type *type = int_type;
     bool non_builtin_type_already_appeared = false;
     while (is_type()) {
-        if (consume("typedef")) {
-            *sclass |= TYPEDEF;
-        } else if (consume("static")) {
-            *sclass |= STATIC;
+        if (peek("typedef") || peek("static")) {
+            if (!sclass)
+              error_tok(token, "記憶クラス指定子は許可されていません");
+
+            if (consume("typedef")) {
+                *sclass |= TYPEDEF;
+            } else if (consume("static")) {
+                *sclass |= STATIC;
+            }
+
+            if (*sclass & (*sclass - 1))
+              error_tok(token, "typedefとstaticは同時に指定できません");
         } else if (consume("void")) {
             type = void_type;
         } else if (consume("_Bool")) {

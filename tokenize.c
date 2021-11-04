@@ -21,10 +21,7 @@ void error(char *fmt, ...) {
 }
 
 // エラー箇所を報告する
-void error_at(char *loc, char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-
+static void verror_at(char *loc, char *fmt, va_list ap) {
     // locが含まれている行の開始地点と終了地点を取得
     char *line = loc;
     while (user_input < line && line[-1] != '\n')
@@ -50,8 +47,20 @@ void error_at(char *loc, char *fmt, ...) {
     fprintf(stderr, "^ ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
+}
 
-    exit(1);
+void error_at(char *loc, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  verror_at(loc, fmt, ap);
+  exit(1);
+}
+
+void error_tok(Token *tok, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  verror_at(tok->str, fmt, ap);
+  exit(1);
 }
 
 // 次のトークンが期待している記号の場合にはトークンを1つ読み進めて真を返す。
