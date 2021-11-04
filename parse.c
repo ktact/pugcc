@@ -154,8 +154,13 @@ static char *new_label() {
     return strndup(buf, 20);
 }
 
+typedef enum {
+  TYPEDEF = 1 << 0,
+  STATIC  = 1 << 1,
+} StorageClass;
+
 static bool is_type();
-static Type *basetype(bool *is_typedef);
+static Type *basetype(StorageClass *sclass);
 static Type *declarator(Type *type, char **name);
 static Type *abstract_declarator(Type *type);
 static Type *type_suffix(Type *type);
@@ -197,14 +202,16 @@ void error_at(char *loc, char *fmt, ...);
 
 // basetype = builtin_type | struct_decl | typedef-name
 // builtin_type = "void" | "_Bool" | "char" | "short" | "int" | "long"
-static Type *basetype(bool *is_typedef) {
-    if (is_typedef) *is_typedef = false;
+static Type *basetype(StorageClass *sclass) {
+    if (sclass) *sclass = 0;
 
     Type *type = int_type;
     bool non_builtin_type_already_appeared = false;
     while (is_type()) {
         if (consume("typedef")) {
-            *is_typedef = true;
+            *sclass |= TYPEDEF;
+        } else if (consume("static")) {
+            *sclass |= STATIC;
         } else if (consume("void")) {
             type = void_type;
         } else if (consume("_Bool")) {
@@ -285,7 +292,8 @@ static Type *type_suffix(Type *type) {
 
 // type_name = basetype abstract_declarator type_suffix
 static Type *type_name() {
-    Type *type = basetype(NULL);
+    StorageClass sclass;
+    Type *type = basetype(&sclass);
     type = abstract_declarator(type);
     return type_suffix(type);
 }
@@ -343,7 +351,8 @@ static Type *struct_decl() {
 
 // struct_member = basetype declarator type_suffix ";"
 static Member *struct_member() {
-    Type *type = basetype(NULL);
+    StorageClass sclass;
+    Type *type = basetype(&sclass);
     char *name = NULL;
     type = declarator(type, &name);
     type = type_suffix(type);
@@ -413,7 +422,7 @@ static Type *enum_specifier() {
 }
 
 static bool is_type() {
-    return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("enum") || peek("struct") || peek("typedef") || find_typedef(token->str));
+    return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("enum") || peek("struct") || peek("typedef") || peek("static") || find_typedef(token->str));
 }
 
 static bool is_function() {
@@ -423,8 +432,8 @@ static bool is_function() {
     Token *tok = token;
 
     // トークンを先読みして型、識別子、（であれば関数宣言であると判断する
-    bool is_typedef = false;
-    Type *type = basetype(&is_typedef);
+    StorageClass sclass;
+    Type *type = basetype(&sclass);
 
     if (!consume(";")) {
         char *func_name = NULL;
@@ -440,8 +449,8 @@ static bool is_function() {
 
 // global_var = basetype declarator type_suffix ";"
 static void global_var() {
-    bool is_typedef = false;
-    Type *type = basetype(&is_typedef);
+    StorageClass sclass;
+    Type *type = basetype(&sclass);
     if (consume(";"))
         return;
 
@@ -450,7 +459,7 @@ static void global_var() {
     type = type_suffix(type);
     expect(";");
 
-    if (is_typedef)
+    if (sclass == TYPEDEF)
         push_typedef_to_scope(name, type);
     else
         new_global_var(name, type, /* emit: */true);
@@ -586,8 +595,8 @@ static Node *initializer(Var *var) {
 // declaration = basetype declarator type_suffix ("=" expr)? ";"
 //             | basetype ";"
 static Node *declaration() {
-    bool is_typedef = false;
-    Type *type = basetype(&is_typedef);
+    StorageClass sclass;
+    Type *type = basetype(&sclass);
     if (consume(";")) {
         return new_node(ND_NOP);
     }
@@ -596,7 +605,7 @@ static Node *declaration() {
     type = declarator(type, &name);
     type = type_suffix(type);
 
-    if (is_typedef) {
+    if (sclass == TYPEDEF) {
         expect(";");
         push_typedef_to_scope(name, type);
         return new_node(ND_NOP);
@@ -688,7 +697,8 @@ static VarList *read_func_params() {
 // params    = param ("," param)* | "void"
 // param     = basetype declarator type_suffix
 Function *func_decl() {
-    Type *type = basetype(NULL);
+    StorageClass sclass;
+    Type *type = basetype(&sclass);
     char *func_name = NULL;
     type = declarator(type, &func_name);
 
@@ -696,6 +706,7 @@ Function *func_decl() {
 
     Function *f = calloc(1, sizeof(Function));
     f->name = func_name;
+    f->is_static = (sclass == STATIC);
     locals = NULL;
 
     expect("(");

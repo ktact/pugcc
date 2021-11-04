@@ -562,7 +562,8 @@ static void emit_data(Program *program) {
 static void emit_text(Program *program) {
     printf(".text\n");
     for (Function *f = program->functions; f; f = f->next) {
-        printf(".global %s\n", f->name);
+        if (!f->is_static)
+          printf(".global %s\n", f->name);
         printf("%s:\n", f->name);
         funcname = f->name;
 

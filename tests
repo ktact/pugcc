@@ -21,6 +21,8 @@ int fib(int x) {
     return fib(x-1) + fib(x-2);
 }
 
+static int static_fn() { return 3; }
+
 void ret_none() {
   return;
 }
@@ -479,6 +481,8 @@ int main() {
     ret_none();
 
     ;
+
+    assert(3, static_fn(), "static_fn()");
 
     printf("OK\n");
 

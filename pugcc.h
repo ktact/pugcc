@@ -215,6 +215,7 @@ struct Function {
     VarList  *params;
     Function *next;
     int stack_size;
+    bool is_static;
 };
 
 typedef struct Program Program;
