@@ -175,6 +175,7 @@ typedef struct Node Node;
 
 // 抽象構文木のノードの型
 struct Node {
+    Token *token;  // for error message
     NodeKind kind; // ノードの型
     Node *lhs;     // 左辺(light-hand side)
     Node *rhs;     // 右辺(right-hand side)
@@ -241,9 +242,10 @@ extern Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 extern void error(char *fmt, ...);
 extern void error_at(char *loc, char *fmt, ...);
 extern void error_tok(Token *tok, char *fmt, ...);
-extern bool consume(char *op);
+extern Token *consume(char *op);
+extern Token *consume_ident();
+extern char *consumed_ident();
 extern Token *peek(char *s);
-extern char *consume_ident();
 extern Token *consume_ident_and_return_consumed_token();
 extern void expect(char *op);
 extern int expect_number();

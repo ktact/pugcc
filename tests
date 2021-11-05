@@ -51,7 +51,6 @@ int assert(long expected, long actual, char *code) {
 }
 
 int main() {
-    voidfn();
     assert( 0,           0,             "0");
     assert(42,          42,            "42");
     assert( 0,           0,             "0");

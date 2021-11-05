@@ -63,14 +63,15 @@ void error_tok(Token *tok, char *fmt, ...) {
   exit(1);
 }
 
-// 次のトークンが期待している記号の場合にはトークンを1つ読み進めて真を返す。
-// それ以外の場合には偽を返す。
-bool consume(char *op) {
+// 次のトークンが期待している記号の場合にはトークンを1つ読み進めて、1つ前のトークンを返す。
+// それ以外の場合にはNULLを返す。
+Token *consume(char *op) {
     if (token->kind != TK_RESERVED || strlen(op) != token->len ||
         memcmp(token->str, op, token->len))
-        return false;
+        return NULL;
+    Token *t = token;
     token = token->next;
-    return true;
+    return t;
 }
 
 // 次のトークンが期待する記号の場合にはそのトークンを返す。
@@ -82,17 +83,9 @@ Token *peek(char *s) {
     return token;
 }
 
-// 次のトークンが識別子であればトークンを1つ読み進めそのトークンの文字列を返す。
+// 次のトークンが識別子であればトークンを1つ読み進めそのトークンを返す。
 // それ以外の場合にはNULLを返す。
-char *consume_ident() {
-    if (token->kind != TK_IDENT)
-        return NULL;
-    Token *t = token;
-    token = token->next;
-    return strndup(t->str, t->len);
-}
-
-Token *consume_ident_and_return_consumed_token() {
+Token *consume_ident() {
     if (token->kind != TK_IDENT)
         return NULL;
     Token *t = token;
@@ -100,12 +93,22 @@ Token *consume_ident_and_return_consumed_token() {
     return t;
 }
 
+// 次のトークンが識別子であればトークンを1つ読み進めそのトークンの文字列を返す。
+// それ以外の場合にはNULLを返す。
+char *consumed_ident() {
+    Token *t = consume_ident();
+    if (t)
+        return strndup(t->str, t->len);
+    else
+        return NULL;
+}
+
 // 次のトークンが期待している記号の場合にはトークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char *op) {
     if (token->kind != TK_RESERVED || strlen(op) != token->len ||
         memcmp(token->str, op, token->len))
-        error_at(token->str, "'%s'ではありません", op);
+        error_tok(token, "'%s'ではありません", op);
     token = token->next;
 }
 
@@ -113,7 +116,7 @@ void expect(char *op) {
 // それ以外の場合にはエラーを報告する。
 int expect_number() {
     if (token->kind != TK_NUM)
-        error_at(token->str, "数ではありません");
+        error_tok(token, "数ではありません");
     int val = token->val;
     token = token->next;
     return val;
@@ -123,7 +126,7 @@ int expect_number() {
 // それ以外の場合にはエラーを報告する。
 char *expect_ident() {
     if (token->kind != TK_IDENT)
-        error_at(token->str, "識別子ではありません");
+        error_tok(token, "識別子ではありません");
     Token *t = token;
     token = token->next;
     return strndup(t->str, t->len);
