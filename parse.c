@@ -483,6 +483,9 @@ static void global_var() {
     type = type_suffix(type);
     expect(";");
 
+    if (type->is_incomplete)
+        error_tok(tok, "不完全な型です");
+
     if (sclass == TYPEDEF) {
         push_typedef_to_scope(name, type);
     } else {
@@ -543,6 +546,14 @@ static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg)
         Token *tok = token;
         token = token->next;
 
+        if (type->is_incomplete) {
+            // 配列長が未指定の場合には値(文字列長)分のサイズとみなす
+            type->size       = tok->len;
+            type->array_size = tok->len;
+
+            type->is_incomplete = false;
+        }
+
         int len = (type->array_size < tok->len) ? type->array_size : tok->len;
 
         for (int i = 0; i < len; i++) {
@@ -578,6 +589,14 @@ static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg)
         while (i < type->array_size) {
             Designator next_elem_desg = { desg, i++ };
             cur = initialize_with_zero(cur, array, type->base, &next_elem_desg);
+        }
+
+        if (type->is_incomplete) {
+            // 配列長が未指定の場合には配列長＝要素数とする
+            type->size       = type->base->size * i;
+            type->array_size = i;
+
+            type->is_incomplete = false;
         }
 
         return cur;
@@ -628,6 +647,9 @@ static Node *declaration() {
     StorageClass sclass;
     Type *type = basetype(&sclass);
     if ((tok = consume(";"))) {
+        if (type->is_incomplete)
+            error_tok(tok, "不完全な型です");
+
         return new_node(ND_NOP, tok);
     }
 
@@ -648,10 +670,11 @@ static Node *declaration() {
     }
 
     Var *var = new_local_var(name, type);
-    if (type->is_incomplete)
-        error_tok(tok, "不完全な型です");
 
     if (consume(";")) {
+     if (type->is_incomplete)
+        error_tok(tok, "不完全な型です");
+
         return new_node(ND_NOP, tok);
     }
 

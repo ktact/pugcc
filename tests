@@ -483,6 +483,11 @@ int main() {
 
     assert(3, static_fn(), "static_fn()");
 
+    // 配列の型が不完全な(=要素数が未指定の)場合
+    assert( 4, ({ int  x[]={1,2,3,4}; x[3];      }), "int  x[]={1,2,3,4}; x[3];");
+    assert(16, ({ int  x[]={1,2,3,4}; sizeof(x); }), "int  x[]={1,2,3,4}; sizeof(x);");
+    assert( 4, ({ char x[]="foo";     sizeof(x); }), "char x[]=\"foo\";   sizeof(x); }");
+
     printf("OK\n");
 
     return 0;
