@@ -42,6 +42,7 @@ struct Type {
     Member *members;
     Type *base;
     Type *return_type;
+    bool is_incomplete;
 };
 
 typedef struct TagList TagList;
@@ -57,6 +58,7 @@ struct Member {
     Type *type;
     int offset;
     Member *next;
+    Token *token; // for error message
 };
 
 // void型の宣言

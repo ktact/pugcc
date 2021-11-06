@@ -284,13 +284,23 @@ static Type *type_suffix(Type *type) {
     if (!consume("["))
         return type;
     int size = 0;
+    bool is_incomplete = true;
     if (!consume("]")) {
         size = constant_expr();
+        is_incomplete = false;
         expect("]");
     }
 
+    Token *tok = token;
     type = type_suffix(type);
-    return array_of(type, size);
+
+    if (type->is_incomplete)
+        error_tok(tok, "配列の要素数が指定されていません");
+
+    type = array_of(type, size);
+    type->is_incomplete = is_incomplete;
+
+    return type;
 }
 
 // type_name = basetype abstract_declarator type_suffix
@@ -337,6 +347,9 @@ static Type *struct_decl() {
 
     int offset = 0;
     for (Member *member = type->members; member; member = member->next) {
+        if (member->type->is_incomplete)
+            error_tok(member->token, "構造体のメンバーの型が不完全です");
+
         offset = align_to(offset, member->type->align);
         member->offset = offset;
         offset += member->type->size;
@@ -357,6 +370,7 @@ static Type *struct_decl() {
 static Member *struct_member() {
     StorageClass sclass;
     Type *type = basetype(&sclass);
+    Token *tok = token;
     char *name = NULL;
     type = declarator(type, &name);
     type = type_suffix(type);
@@ -365,6 +379,7 @@ static Member *struct_member() {
     Member *member = calloc(1, sizeof(Member));
     member->name = name;
     member->type = type;
+    member->token = tok;
 
     return member;
 }
@@ -463,14 +478,19 @@ static void global_var() {
         return;
 
     char *name = NULL;
+    Token *tok = token;
     type = declarator(type, &name);
     type = type_suffix(type);
     expect(";");
 
-    if (sclass == TYPEDEF)
+    if (sclass == TYPEDEF) {
         push_typedef_to_scope(name, type);
-    else
+    } else {
+        if (type->is_incomplete)
+            error_tok(tok, "不完全な型です");
+
         new_global_var(name, type, /* emit: */true);
+    }
 }
 
 typedef struct Designator Designator;
@@ -628,6 +648,9 @@ static Node *declaration() {
     }
 
     Var *var = new_local_var(name, type);
+    if (type->is_incomplete)
+        error_tok(tok, "不完全な型です");
+
     if (consume(";")) {
         return new_node(ND_NOP, tok);
     }
@@ -1388,6 +1411,9 @@ Node *primary() {
         if (consume("(")) {
             if (is_type()) {
                 Type *type = type_name();
+                if (type->is_incomplete)
+                    error_tok(tok, "不完全な型です");
+
                 expect(")");
                 return new_num_node(type->size, tok);
             }
@@ -1396,6 +1422,10 @@ Node *primary() {
 
         Node *node = unary();
         add_type(node);
+
+        if (node->type->is_incomplete)
+            error_tok(tok, "不完全な型です");
+
         return new_num_node(node->type->size, tok);
     }
 
