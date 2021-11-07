@@ -49,6 +49,7 @@ typedef struct TagList TagList;
 struct TagList {
     TagList *next;
     char *name;
+    int len;
     Type *type;
 };
 
@@ -75,6 +76,8 @@ extern Type *int_type;
 extern Type *long_type;
 // enum型の宣言
 extern Type *enum_type;
+// 構造体型の宣言
+extern Type *struct_type();
 // 関数型の宣言
 extern Type *func_type(Type *return_type);
 // 指定型の配列型を得る関数の宣言
@@ -246,7 +249,6 @@ extern void error_at(char *loc, char *fmt, ...);
 extern void error_tok(Token *tok, char *fmt, ...);
 extern Token *consume(char *op);
 extern Token *consume_ident();
-extern char *consumed_ident();
 extern Token *peek(char *s);
 extern Token *consume_ident_and_return_consumed_token();
 extern void expect(char *op);

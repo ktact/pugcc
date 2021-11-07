@@ -8,6 +8,13 @@ Type *int_type   = &(Type){ INT,   4, 4 };
 Type *long_type  = &(Type){ LONG,  8, 8 };
 Type *enum_type  = &(Type){ ENUM,  4, 4 };
 
+Type *struct_type() {
+    Type *type = calloc(1, sizeof(Type));
+    type->kind = STRUCT;
+    type->is_incomplete = false;
+    return type;
+}
+
 int align_to(int n, int align) {
     return (n + align -1) & ~(align - 1);
 }

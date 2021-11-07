@@ -117,27 +117,28 @@ static Var *push_enum_field_to_scope(char *field_name, Type *type, int val) {
 }
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
-static Var *find_var(char *name) {
+static Var *find_var(Token *tok) {
     for (VarList *vl = var_scope; vl; vl = vl->next) {
         Var *var = vl->var;
-        if (var->len == strlen(name) && !memcmp(name, var->name, var->len))
+        if (var->len == tok->len && !memcmp(tok->str, var->name, tok->len)) {
             return var;
+        }
     }
     return NULL;
 }
 
-static Type *find_typedef(char *type_name) {
+static Type *find_typedef(Token *tok) {
     for (VarList *vl = var_scope; vl; vl = vl->next) {
         Var *var = vl->var;
-        if (var->len == strlen(type_name) && !memcmp(type_name, var->name, var->len))
+        if (var->len == tok->len && !memcmp(tok->str, var->name, tok->len))
             return vl->type_def;
     }
     return NULL;
 }
 
-static TagList *find_tag_by(char *name) {
+static TagList *find_tag_by(Token *tok) {
     for (TagList *tag = tag_scope; tag; tag = tag->next)
-        if (strlen(tag->name) == strlen(name) && !memcmp(name, tag->name, strlen(tag->name)))
+        if (tag->len == tok->len && !memcmp(tok->str, tag->name, tok->len))
             return tag;
     return NULL;
 }
@@ -236,7 +237,7 @@ static Type *basetype(StorageClass *sclass) {
             non_builtin_type_already_appeared = true;
         } else {
             if (non_builtin_type_already_appeared) break;
-            char *type_name = consumed_ident();
+            Token *type_name = consume_ident();
 
             type = find_typedef(type_name);
             non_builtin_type_already_appeared = true;
@@ -311,10 +312,11 @@ static Type *type_name() {
     return type_suffix(type);
 }
 
-static void push_tag_to_scope(char *name, Type *type) {
+static void push_tag_to_scope(Token *tok, Type *type) {
     TagList *tag = calloc(1, sizeof(TagList));
     tag->next = tag_scope;
-    tag->name = strndup(name, strlen(name));
+    tag->name = strndup(tok->str, tok->len);
+    tag->len  = tok->len;
     tag->type = type;
     tag_scope = tag;
 }
@@ -325,9 +327,19 @@ static Type *struct_decl() {
     expect("struct");
 
     // 構造体名を読む
-    char *tag_name = consumed_ident();
+    Token *tag_name = consume_ident();
     if (tag_name && !peek("{")) {
         TagList *tag = find_tag_by(tag_name);
+
+        if (!tag) {
+            Type *type = struct_type();
+            push_tag_to_scope(tag_name, type);
+            return type;
+        }
+
+        if (tag->type->kind != STRUCT)
+            error_at(tag->name, "構造体のタグではありません");
+
         return tag->type;
     }
 
@@ -411,13 +423,13 @@ static Type *enum_specifier() {
     expect("enum");
     Type *type = enum_type;
 
-    char *tag_name = consumed_ident();
+    Token *tag_name = consume_ident();
     if (tag_name && !peek("{")) {
         TagList *scope = find_tag_by(tag_name);
         if (!scope)
-            error_at(tag_name, "未定義のenumです");
+            error_tok(tag_name, "未定義のenumです");
         if (scope->type->kind != ENUM)
-            error_at(tag_name, "enumのタグではありません");
+            error_tok(tag_name, "enumのタグではありません");
         return scope->type;
     }
 
@@ -437,7 +449,6 @@ static Type *enum_specifier() {
     }
 
     if (tag_name) {
-        //tag_name = strndup(tag->str, tag->len);
         push_tag_to_scope(tag_name, type);
     }
 
@@ -445,7 +456,7 @@ static Type *enum_specifier() {
 }
 
 static bool is_type() {
-    return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("enum") || peek("struct") || peek("typedef") || peek("static") || find_typedef(token->str));
+    return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("enum") || peek("struct") || peek("typedef") || peek("static") || find_typedef(token));
 }
 
 static bool is_function() {
@@ -1387,7 +1398,7 @@ Node *primary() {
             node->args     = funcargs();
             add_type(node);
 
-            Var *var = find_var(ident);
+            Var *var = find_var(tok);
             if (var) {
                 if (var->type->kind != FUNC)
                     fprintf(stderr, "%sは関数ではありません。\n", ident);
@@ -1401,7 +1412,8 @@ Node *primary() {
             // 変数参照
             Node *node = new_node(ND_VAR, tok);
 
-            Var *var = find_var(tok->str);
+            // 変数 or 列挙定数
+            Var *var = find_var(tok);
             if (var) {
                 if (var->type->kind == ENUM) {
                     node = new_num_node(var->enum_val, tok);

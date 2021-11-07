@@ -7,16 +7,12 @@ char *read_file(char *path) {
     if (!fp)
         error("cannot open %s: %s", path, strerror(errno));
 
-    // ファイルの長さを調べる
-    if (fseek(fp, 0, SEEK_END) == -1)
-        error("%s: fseek: %s", path, strerror(errno));
-    size_t size = ftell(fp);
-    if (fseek(fp, 0, SEEK_SET) == -1)
-        error("%s: fseek: %s", path, strerror(errno));
-
     // ファイル内容を読み込む
-    char *buf = calloc(1, size + 2);
-    fread(buf, size, 1, fp);
+    int filemax = 10 * 1024 * 1024;
+    char *buf = malloc(filemax);
+    size_t size = fread(buf, 1, filemax - 2, fp);
+    if (!feof(fp))
+        error("%s: file too large", path);
 
     // ファイルが必ず"\n\0"で終わっているようにする
     if (size == 0 || buf[size - 1] != '\n')

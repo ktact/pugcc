@@ -4,7 +4,7 @@
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
-    tok->str  = strndup(str, len);
+    tok->str  = str;
     tok->len  = len;
     cur->next = tok;
     return tok;
@@ -91,16 +91,6 @@ Token *consume_ident() {
     Token *t = token;
     token = token->next;
     return t;
-}
-
-// 次のトークンが識別子であればトークンを1つ読み進めそのトークンの文字列を返す。
-// それ以外の場合にはNULLを返す。
-char *consumed_ident() {
-    Token *t = consume_ident();
-    if (t)
-        return strndup(t->str, t->len);
-    else
-        return NULL;
 }
 
 // 次のトークンが期待している記号の場合にはトークンを1つ読み進める。
@@ -322,6 +312,9 @@ Token *tokenize() {
             p++; // 読み出し位置を、文字列リテラルの終端の"の次の文字にセットする
 
             cur = new_token(TK_STR, cur, buf, len);
+            cur->str = malloc(len + 1);
+            memcpy(cur->str, buf, len);
+            cur->len = len;
             continue;
         }
 
