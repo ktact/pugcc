@@ -9,21 +9,21 @@
 #include <assert.h>
 
 typedef enum {
-    TK_RESERVED, // 記号
-    TK_IDENT,    // 識別子
-    TK_NUM,      // 整数トークン
-    TK_STR,      // 文字列リテラルトークン
-    TK_EOF,      // 入力の終わりを表すトークン
+  TK_RESERVED, // 記号
+  TK_IDENT,    // 識別子
+  TK_NUM,      // 整数トークン
+  TK_STR,      // 文字列リテラルトークン
+  TK_EOF,      // 入力の終わりを表すトークン
 } TokenKind;
 
 typedef struct Token Token;
 
 struct Token {
-    TokenKind kind; // トークンの型
-    Token *next;    // 次の入力トークン
-    int val;        // kindがTK_NUMの場合、その整数値
-    char *str;      // トークン文字列
-    int len;        // トークンの長さ
+  TokenKind kind; // トークンの型
+  Token *next;    // 次の入力トークン
+  int val;        // kindがTK_NUMの場合、その整数値
+  char *str;      // トークン文字列
+  int len;        // トークンの長さ
 };
 
 // 現在着目しているトークン
@@ -34,32 +34,32 @@ typedef struct Member Member;
 
 // 型を表す型
 struct Type {
-    enum { VOID, BOOL, CHAR, SHORT, INT, LONG, ENUM, PTR, ARRAY, STRUCT, FUNC } kind;
-    int size;
-    int align;
-    int array_size;
-    struct Type *pointer_to;
-    Member *members;
-    Type *base;
-    Type *return_type;
-    bool is_incomplete;
+  enum { VOID, BOOL, CHAR, SHORT, INT, LONG, ENUM, PTR, ARRAY, STRUCT, FUNC } kind;
+  int size;
+  int align;
+  int array_size;
+  struct Type *pointer_to;
+  Member *members;
+  Type *base;
+  Type *return_type;
+  bool is_incomplete;
 };
 
 typedef struct TagList TagList;
 struct TagList {
-    TagList *next;
-    char *name;
-    int len;
-    Type *type;
+  TagList *next;
+  char *name;
+  int len;
+  Type *type;
 };
 
 // 構造体のメンバを表す型
 struct Member {
-    char *name;
-    Type *type;
-    int offset;
-    Member *next;
-    Token *token; // for error message
+  char *name;
+  Type *type;
+  int offset;
+  Member *next;
+  Token *token; // for error message
 };
 
 // void型の宣言
@@ -89,120 +89,120 @@ typedef struct Var Var;
 
 // 変数を表す型
 struct Var {
-    char *name;     // 変数の名前
-    int   len;      // 変数名の文字列長
-    Type *type;     // 変数の型
-    int   offset;   // RBPからのオフセット; ローカル変数の場合にのみ使用する
-    char *contents;
-    int content_len;
-    bool  is_local;
-    int enum_val;
+  char *name;     // 変数の名前
+  int   len;      // 変数名の文字列長
+  Type *type;     // 変数の型
+  int   offset;   // RBPからのオフセット; ローカル変数の場合にのみ使用する
+  char *contents;
+  int content_len;
+  bool  is_local;
+  int enum_val;
 };
 
 typedef struct VarList VarList;
 
 struct VarList {
-    Var *var;
-    VarList *next;
-    Type *type_def;
+  Var *var;
+  VarList *next;
+  Type *type_def;
 };
 
 typedef struct {
-    VarList *var_scope;
-    TagList *tag_scope;
+  VarList *var_scope;
+  TagList *tag_scope;
 } Scope;
 
 // 抽象構文木のノードの種類
 typedef enum {
-    ND_ADD,           // num + num
-    ND_SUB,           // num - num
-    ND_PTR_ADD,       // ptr + num | num + ptr
-    ND_PTR_SUB,       // ptr - num | num - ptr
-    ND_PTR_DIFF,      // ptr - ptr
-    ND_MUL,           // *
-    ND_DIV,           // /
-    ND_ASSIGN,        // =
-    ND_TERNARY,       // ?:
-    ND_COMMA_OP,      // ,
-    ND_PRE_INC,       // ++x
-    ND_PRE_DEC,       // --x
-    ND_POST_INC,      // x++
-    ND_POST_DEC,      // x--
-    ND_ADD_EQ,        // +=
-    ND_PTR_ADD_EQ,    // +=
-    ND_SUB_EQ,        // -=
-    ND_PTR_SUB_EQ,    // -=
-    ND_MUL_EQ,        // *=
-    ND_DIV_EQ,        // /=
-    ND_SHL_EQ,        // <<=
-    ND_SHR_EQ,        // >>=
-    ND_BITAND_EQ,     // &=
-    ND_BITOR_EQ,      // |=
-    ND_BITXOR_EQ,     // ^=
-    ND_VAR,           // Local/Global Variable
-    ND_EQ,            // ==
-    ND_NE,            // !=
-    ND_LT,            // <
-    ND_LE,            // <=
-    ND_NUM,           // Integer
-    ND_CAST,          // Type cast
-    ND_IF,            // if
-    ND_WHILE,         // while
-    ND_FOR,           // for
-    ND_DO,            // do
-    ND_SWITCH,        // switch
-    ND_CASE,          // case
-    ND_BLOCK,         // {...}
-    ND_BREAK,         // break
-    ND_CONTINUE,      // continue
-    ND_GOTO,          // goto
-    ND_LABEL,         // labled statement
-    ND_FUNCCALL,      // function()
-    ND_EXPR_STMT,     // expression statement
-    ND_GNU_STMT_EXPR, // GNU statement expression
-    ND_MEMBER,        // . (struct member access)
-    ND_ADDR,          // &x
-    ND_DEREF,         // *x
-    ND_NOT,           // !
-    ND_BITNOT,        // ~
-    ND_BITAND,        // &
-    ND_BITOR,         // |
-    ND_BITXOR,        // ^
-    ND_SHL,           // <<
-    ND_SHR,           // >>
-    ND_LOGAND,        // &&
-    ND_LOGOR,         // ||
-    ND_RETURN,        // return
-    ND_NOP,           // Empty statement
+  ND_ADD,           // num + num
+  ND_SUB,           // num - num
+  ND_PTR_ADD,       // ptr + num | num + ptr
+  ND_PTR_SUB,       // ptr - num | num - ptr
+  ND_PTR_DIFF,      // ptr - ptr
+  ND_MUL,           // *
+  ND_DIV,           // /
+  ND_ASSIGN,        // =
+  ND_TERNARY,       // ?:
+  ND_COMMA_OP,      // ,
+  ND_PRE_INC,       // ++x
+  ND_PRE_DEC,       // --x
+  ND_POST_INC,      // x++
+  ND_POST_DEC,      // x--
+  ND_ADD_EQ,        // +=
+  ND_PTR_ADD_EQ,    // +=
+  ND_SUB_EQ,        // -=
+  ND_PTR_SUB_EQ,    // -=
+  ND_MUL_EQ,        // *=
+  ND_DIV_EQ,        // /=
+  ND_SHL_EQ,        // <<=
+  ND_SHR_EQ,        // >>=
+  ND_BITAND_EQ,     // &=
+  ND_BITOR_EQ,      // |=
+  ND_BITXOR_EQ,     // ^=
+  ND_VAR,           // Local/Global Variable
+  ND_EQ,            // ==
+  ND_NE,            // !=
+  ND_LT,            // <
+  ND_LE,            // <=
+  ND_NUM,           // Integer
+  ND_CAST,          // Type cast
+  ND_IF,            // if
+  ND_WHILE,         // while
+  ND_FOR,           // for
+  ND_DO,            // do
+  ND_SWITCH,        // switch
+  ND_CASE,          // case
+  ND_BLOCK,         // {...}
+        ND_BREAK,         // break
+        ND_CONTINUE,      // continue
+        ND_GOTO,          // goto
+        ND_LABEL,         // labled statement
+        ND_FUNCCALL,      // function()
+        ND_EXPR_STMT,     // expression statement
+        ND_GNU_STMT_EXPR, // GNU statement expression
+        ND_MEMBER,        // . (struct member access)
+        ND_ADDR,          // &x
+        ND_DEREF,         // *x
+        ND_NOT,           // !
+        ND_BITNOT,        // ~
+        ND_BITAND,        // &
+        ND_BITOR,         // |
+        ND_BITXOR,        // ^
+        ND_SHL,           // <<
+        ND_SHR,           // >>
+        ND_LOGAND,        // &&
+        ND_LOGOR,         // ||
+        ND_RETURN,        // return
+        ND_NOP,           // Empty statement
 } NodeKind;
 
 typedef struct Node Node;
 
 // 抽象構文木のノードの型
 struct Node {
-    Token *token;  // for error message
-    NodeKind kind; // ノードの型
-    Node *lhs;     // 左辺(light-hand side)
-    Node *rhs;     // 右辺(right-hand side)
-    Node *cond;    // if,while,for文の条件式
-    Node *then;    // if,while,for文の条件式が真の場合に実行される式
-    Node *els;     // if,while,for文の条件式が偽の場合に実行される式
-    Node *init;
-    Node *inc;
-    Node *body;
-    Member *member; // 構造体のメンバへのアクセス
-    Node *args;
-    Node *next;
-    long val;      // kindがND_NUMの場合のみ使う
-    Var *var;
-    Node *case_next;
-    Node *default_case;
-    int case_label;
-    int case_end_label;
-    Type *type;    // 変数の型; kindがND_VARの場合のみ使う
-    int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_VARの場合のみ使う
-    char *funcname; // kindがND_FUNCCALLの場合のみ使う
-    char *label_name;
+  Token *token;  // for error message
+  NodeKind kind; // ノードの型
+  Node *lhs;     // 左辺(light-hand side)
+  Node *rhs;     // 右辺(right-hand side)
+  Node *cond;    // if,while,for文の条件式
+  Node *then;    // if,while,for文の条件式が真の場合に実行される式
+  Node *els;     // if,while,for文の条件式が偽の場合に実行される式
+  Node *init;
+  Node *inc;
+  Node *body;
+  Member *member; // 構造体のメンバへのアクセス
+  Node *args;
+  Node *next;
+  long val;      // kindがND_NUMの場合のみ使う
+  Var *var;
+  Node *case_next;
+  Node *default_case;
+  int case_label;
+  int case_end_label;
+  Type *type;    // 変数の型; kindがND_VARの場合のみ使う
+  int offset;    // ローカル変数のベースポインタからのオフセット; kindがND_VARの場合のみ使う
+  char *funcname; // kindがND_FUNCCALLの場合のみ使う
+  char *label_name;
 };
 
 // ノードがポインタ型であるか判定する関数の宣言
@@ -216,20 +216,20 @@ typedef struct Function Function;
 
 // 関数を表す型
 struct Function {
-    char     *name;
-    Node     *body;
-    VarList  *params;
-    Function *next;
-    int stack_size;
-    bool is_static;
+  char     *name;
+  Node     *body;
+  VarList  *params;
+  Function *next;
+  int stack_size;
+  bool is_static;
 };
 
 typedef struct Program Program;
 
 // プログラムを表す型
 struct Program {
-    Function *functions;
-    VarList *global_variables;
+  Function *functions;
+  VarList *global_variables;
 };
 
 // 入力ファイル名
