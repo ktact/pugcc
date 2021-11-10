@@ -126,30 +126,30 @@ void add_type(Node *node) {
       node->type = node->lhs->type;
       break;
     case ND_ADDR: {
-                    Type *type = node->lhs->type;
-                    if (type->kind == ARRAY)
-                      node->type = pointer_to(type->base);
-                    else
-                      node->type = pointer_to(type);
-                  }
-                  break;
+      Type *type = node->lhs->type;
+      if (type->kind == ARRAY)
+        node->type = pointer_to(type->base);
+      else
+        node->type = pointer_to(type);
+    }
+    break;
     case ND_DEREF:
-                  if (node->lhs->type->kind == PTR)
-                    node->type = node->lhs->type->pointer_to;
-                  else
-                    node->type = node->lhs->type->base;
+      if (node->lhs->type->kind == PTR)
+        node->type = node->lhs->type->pointer_to;
+      else
+        node->type = node->lhs->type->base;
 
-                  if (node->type->kind == VOID) {
-                    fprintf(stderr, "%s: void型を参照しています。\n", node->var->name);
-                    exit(1);
-                  }
-                  break;
+      if (node->type->kind == VOID) {
+        fprintf(stderr, "%s: void型を参照しています。\n", node->var->name);
+        exit(1);
+      }
+      break;
     case ND_GNU_STMT_EXPR: {
-                             Node *last = node->body;
-                             while (last->next)
-                               last = last->next;
-                             node->type = last->type;
-                           }
-                           break;
+      Node *last = node->body;
+      while (last->next)
+        last = last->next;
+      node->type = last->type;
+    }
+    break;
   }
 }

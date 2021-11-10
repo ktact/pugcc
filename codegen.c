@@ -234,263 +234,268 @@ static void gen(Node *node) {
       store(node->type);
       return;
     case ND_TERNARY: {
-                       int seq_num = label_seq_num++;
+      int seq_num = label_seq_num++;
 
-                       gen(node->cond);
-                       printf("  pop rax\n");
-                       printf("  cmp rax, 0\n");
-                       printf("  je  .L.else.%d\n", seq_num);
-                       gen(node->then);
-                       printf("  jmp .L.end.%d\n", seq_num);
-                       printf(".L.else.%d:\n", seq_num);
-                       gen(node->els);
-                       printf(".L.end.%d:\n", seq_num);
-                       return;
-                     }
+      gen(node->cond);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je  .L.else.%d\n", seq_num);
+      gen(node->then);
+      printf("  jmp .L.end.%d\n", seq_num);
+      printf(".L.else.%d:\n", seq_num);
+      gen(node->els);
+      printf(".L.end.%d:\n", seq_num);
+      return;
+    }
     case ND_PRE_INC:
-                     gen_lval(node->lhs);
-                     printf("  push [rsp]\n");
-                     load(node->type);
-                     inc(node->type);
-                     store(node->type);
-                     return;
+      gen_lval(node->lhs);
+      printf("  push [rsp]\n");
+      load(node->type);
+      inc(node->type);
+      store(node->type);
+      return;
     case ND_PRE_DEC:
-                     gen_lval(node->lhs);
-                     printf("  push [rsp]\n");
-                     load(node->type);
-                     dec(node->type);
-                     store(node->type);
-                     return;
+      gen_lval(node->lhs);
+      printf("  push [rsp]\n");
+      load(node->type);
+      dec(node->type);
+      store(node->type);
+      return;
     case ND_POST_INC:
-                     gen_lval(node->lhs);
-                     printf("  push [rsp]\n");
-                     load(node->type);
-                     inc(node->type);
-                     store(node->type);
-                     dec(node->type);
-                     return;
+      gen_lval(node->lhs);
+      printf("  push [rsp]\n");
+      load(node->type);
+      inc(node->type);
+      store(node->type);
+      dec(node->type);
+      return;
     case ND_POST_DEC:
-                     gen_lval(node->lhs);
-                     printf("  push [rsp]\n");
-                     load(node->type);
-                     dec(node->type);
-                     store(node->type);
-                     inc(node->type);
-                     return;
+      gen_lval(node->lhs);
+      printf("  push [rsp]\n");
+      load(node->type);
+      dec(node->type);
+      store(node->type);
+      inc(node->type);
+      return;
     case ND_NOT:
-                     gen(node->lhs);
-                     printf("  pop rax\n");
-                     // RAX=0であれば1にする
-                     printf("  cmp rax, 0\n");
-                     printf("  sete al\n");
-                     printf("  movzb rax, al\n");
-                     printf("  push rax\n");
-                     return;
+      gen(node->lhs);
+      printf("  pop rax\n");
+      // RAX=0であれば1にする
+      printf("  cmp rax, 0\n");
+      printf("  sete al\n");
+      printf("  movzb rax, al\n");
+      printf("  push rax\n");
+      return;
     case ND_BITNOT:
-                     gen(node->lhs);
-                     printf("  pop rax\n");
-                     printf("  not rax\n");
-                     printf("  push rax\n");
-                     return;
+      gen(node->lhs);
+      printf("  pop rax\n");
+      printf("  not rax\n");
+      printf("  push rax\n");
+      return;
     case ND_LOGAND: {
-                      int seq_num = label_seq_num++;
-                      gen(node->lhs);
-                      printf("  pop rax\n");
-                      printf("  cmp rax, 0\n");
-                      printf("  je  .L.false.%d\n", seq_num);
-                      gen(node->rhs);
-                      printf("  pop rax\n");
-                      printf("  cmp rax, 0\n");
-                      printf("  je  .L.false.%d\n", seq_num);
-                      printf("  push 1\n");
-                      printf("  jmp .L.end.%d\n", seq_num);
-                      printf(".L.false.%d:\n", seq_num);
-                      printf("  push 0\n");
-                      printf(".L.end.%d:\n", seq_num);
-                      return;
-                    }
+      int seq_num = label_seq_num++;
+      gen(node->lhs);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je  .L.false.%d\n", seq_num);
+      gen(node->rhs);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je  .L.false.%d\n", seq_num);
+      printf("  push 1\n");
+      printf("  jmp .L.end.%d\n", seq_num);
+      printf(".L.false.%d:\n", seq_num);
+      printf("  push 0\n");
+      printf(".L.end.%d:\n", seq_num);
+      return;
+    }
     case ND_LOGOR: {
-                     int seq_num = label_seq_num++;
-                     gen(node->lhs);
-                     printf("  pop rax\n");
-                     printf("  cmp rax, 0\n");
-                     printf("  jne .L.true.%d\n", seq_num);
-                     gen(node->rhs);
-                     printf("  pop rax\n");
-                     printf("  cmp rax, 0\n");
-                     printf("  jne .L.true.%d\n", seq_num);
-                     printf("  push 0\n");
-                     printf("  jmp .L.end.%d\n", seq_num);
-                     printf(".L.true.%d:\n", seq_num);
-                     printf("  push 1\n");
-                     printf(".L.end.%d:\n", seq_num);
-                     return;
-                   }
+      int seq_num = label_seq_num++;
+      gen(node->lhs);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  jne .L.true.%d\n", seq_num);
+      gen(node->rhs);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  jne .L.true.%d\n", seq_num);
+      printf("  push 0\n");
+      printf("  jmp .L.end.%d\n", seq_num);
+      printf(".L.true.%d:\n", seq_num);
+      printf("  push 1\n");
+      printf(".L.end.%d:\n", seq_num);
+      return;
+    }
     case ND_IF: {
-                  int seq_num = label_seq_num++;
-                  if (node->els) {
-                    gen(node->cond);
-                    printf("  pop rax\n");
-                    printf("  cmp rax, 0\n");
-                    printf("  je  .L.else.%d\n", seq_num);
-                    gen(node->then);
-                    printf("  jmp .L.end.%d\n", seq_num);
-                    printf(".L.else.%d:\n", seq_num);
-                    gen(node->els);
-                    printf(".L.end.%d:\n", seq_num);
-                  } else {
-                    gen(node->cond);
-                    printf("  pop rax\n");
-                    printf("  cmp rax, 0\n");
-                    printf("  je  .L.end.%d\n", seq_num);
-                    gen(node->then);
-                    printf(".L.end.%d:\n", seq_num);
-                  }
-                  return;
-                }
+      int seq_num = label_seq_num++;
+      if (node->els) {
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je  .L.else.%d\n", seq_num);
+        gen(node->then);
+        printf("  jmp .L.end.%d\n", seq_num);
+        printf(".L.else.%d:\n", seq_num);
+        gen(node->els);
+        printf(".L.end.%d:\n", seq_num);
+      } else {
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je  .L.end.%d\n", seq_num);
+        gen(node->then);
+        printf(".L.end.%d:\n", seq_num);
+      }
+      return;
+    }
     case ND_WHILE: {
-                     int seq_num = label_seq_num++;
-                     int brk_num = break_seq_num;
-                     int cnt_num = continue_seq_num;
-                     break_seq_num = continue_seq_num = seq_num;
+      int seq_num = label_seq_num++;
+      int brk_num = break_seq_num;
+      int cnt_num = continue_seq_num;
+      break_seq_num = continue_seq_num = seq_num;
 
-                     printf(".L.continue.%d:\n", seq_num);
-                     gen(node->cond);
-                     printf("  pop rax\n");
-                     printf("  cmp rax, 0\n");
-                     printf("  je  .L.break.%d\n", seq_num);
-                     gen(node->then);
-                     printf("  jmp .L.continue.%d\n", seq_num);
-                     printf(".L.break.%d:\n", seq_num);
+      printf(".L.continue.%d:\n", seq_num);
+      gen(node->cond);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je  .L.break.%d\n", seq_num);
+      gen(node->then);
+      printf("  jmp .L.continue.%d\n", seq_num);
+      printf(".L.break.%d:\n", seq_num);
 
-                     break_seq_num    = brk_num;
-                     continue_seq_num = cnt_num;
-                     return;
-                   }
+      break_seq_num    = brk_num;
+      continue_seq_num = cnt_num;
+      return;
+    }
     case ND_FOR: {
-                   int seq_num = label_seq_num++;
-                   int brk_num = break_seq_num;
-                   int cnt_num = continue_seq_num;
-                   break_seq_num = continue_seq_num = seq_num;
+      int seq_num = label_seq_num++;
+      int brk_num = break_seq_num;
+      int cnt_num = continue_seq_num;
+      break_seq_num = continue_seq_num = seq_num;
 
-                   if (node->init)
-                     gen(node->init);
-                   printf(".L.begin.%d:\n", seq_num);
-                   if (node->cond) {
-                     gen(node->cond);
-                     printf("  pop rax\n");
-                     printf("  cmp rax, 0\n");
-                     printf("  je  .L.break.%d\n", seq_num);
-                   }
-                   gen(node->then);
-                   printf(".L.continue.%d:\n", seq_num);
-                   if (node->inc)
-                     gen(node->inc);
-                   printf("  jmp .L.begin.%d\n", seq_num);
-                   printf(".L.break.%d:\n", seq_num);
+      if (node->init)
+        gen(node->init);
 
-                   break_seq_num    = brk_num;
-                   continue_seq_num = cnt_num;
+      printf(".L.begin.%d:\n", seq_num);
 
-                   return;
-                 }
+      if (node->cond) {
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je  .L.break.%d\n", seq_num);
+      }
+
+      gen(node->then);
+      printf(".L.continue.%d:\n", seq_num);
+
+      if (node->inc)
+        gen(node->inc);
+
+      printf("  jmp .L.begin.%d\n", seq_num);
+      printf(".L.break.%d:\n", seq_num);
+
+      break_seq_num    = brk_num;
+      continue_seq_num = cnt_num;
+
+      return;
+    }
     case ND_DO: {
-                  int seq_num = label_seq_num++;
-                  int brk_num = break_seq_num;
-                  int cnt_num = continue_seq_num;
-                  break_seq_num = continue_seq_num = seq_num;
+      int seq_num = label_seq_num++;
+      int brk_num = break_seq_num;
+      int cnt_num = continue_seq_num;
+      break_seq_num = continue_seq_num = seq_num;
 
-                  printf(".L.begin.%d:\n", seq_num);
-                  gen(node->then);
-                  printf(".L.continue.%d:\n", seq_num);
-                  gen(node->cond);
-                  printf("  pop rax\n");
-                  printf("  cmp rax, 0\n");
-                  printf("  jne .L.begin.%d\n", seq_num);
-                  printf(".L.break.%d:\n", seq_num);
+      printf(".L.begin.%d:\n", seq_num);
+      gen(node->then);
+      printf(".L.continue.%d:\n", seq_num);
+      gen(node->cond);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  jne .L.begin.%d\n", seq_num);
+      printf(".L.break.%d:\n", seq_num);
 
-                  break_seq_num    = brk_num;
-                  continue_seq_num = cnt_num;
-                  return;
-                }
+      break_seq_num    = brk_num;
+      continue_seq_num = cnt_num;
+      return;
+    }
     case ND_SWITCH: {
-                      int seq_num = label_seq_num++;
-                      int brk_num = break_seq_num;
-                      break_seq_num = seq_num;
+      int seq_num = label_seq_num++;
+      int brk_num = break_seq_num;
+      break_seq_num = seq_num;
 
-                      gen(node->cond);
-                      printf("  pop rax\n");
+      gen(node->cond);
+      printf("  pop rax\n");
 
-                      node->case_label = seq_num;
-                      for (Node *n = node->case_next; n; n = n->case_next) {
-                        n->case_label     = label_seq_num++;
-                        n->case_end_label = seq_num;
-                        printf("  cmp rax, %ld\n", n->val);
-                        printf("  je .L.case.%d\n", n->case_label);
-                      }
+      node->case_label = seq_num;
+      for (Node *n = node->case_next; n; n = n->case_next) {
+        n->case_label     = label_seq_num++;
+        n->case_end_label = seq_num;
+        printf("  cmp rax, %ld\n", n->val);
+        printf("  je .L.case.%d\n", n->case_label);
+      }
 
-                      if (node->default_case) {
-                        int i = label_seq_num++;
-                        node->default_case->case_end_label = seq_num;
-                        node->default_case->case_label     = i;
-                        printf("  jmp .L.case.%d\n", i);
-                      }
+      if (node->default_case) {
+        int i = label_seq_num++;
+        node->default_case->case_end_label = seq_num;
+        node->default_case->case_label     = i;
+        printf("  jmp .L.case.%d\n", i);
+      }
 
-                      printf("  jmp .L.break.%d\n", seq_num);
-                      gen(node->then);
-                      printf(".L.break.%d:\n", seq_num);
+      printf("  jmp .L.break.%d\n", seq_num);
+      gen(node->then);
+      printf(".L.break.%d:\n", seq_num);
 
-                      break_seq_num = brk_num;
-                      return;
-                    }
+      break_seq_num = brk_num;
+      return;
+    }
     case ND_CASE:
-                    printf(".L.case.%d:\n", node->case_label);
-                    gen(node->lhs);
-                    return;
+      printf(".L.case.%d:\n", node->case_label);
+      gen(node->lhs);
+      return;
     case ND_BLOCK:
     case ND_GNU_STMT_EXPR:
-                    for (Node *n = node->body; n; n = n->next)
-                      gen(n);
-                    return;
+      for (Node *n = node->body; n; n = n->next)
+        gen(n);
+      return;
     case ND_BREAK:
-                    printf("  jmp .L.break.%d\n", break_seq_num);
-                    return;
+      printf("  jmp .L.break.%d\n", break_seq_num);
+      return;
     case ND_CONTINUE:
-                    printf("  jmp .L.continue.%d\n", continue_seq_num);
-                    return;
+      printf("  jmp .L.continue.%d\n", continue_seq_num);
+      return;
     case ND_GOTO:
-                    printf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
-                    return;
+      printf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
+      return;
     case ND_LABEL:
-                    printf(".L.label.%s.%s:\n", funcname, node->label_name);
-                    gen(node->lhs);
-                    return;
+      printf(".L.label.%s.%s:\n", funcname, node->label_name);
+      gen(node->lhs);
+      return;
     case ND_FUNCCALL: {
-                        int number_of_args = 0;
-                        for (Node *arg = node->args; arg; arg = arg->next) {
-                          gen(arg);
-                          number_of_args++;
-                        }
-                        for (int i = number_of_args-1; i >= 0; i--) {
-                          printf("  pop %s\n", _8byte_arg_regs[i]);
-                        }
+      int number_of_args = 0;
+      for (Node *arg = node->args; arg; arg = arg->next) {
+        gen(arg);
+        number_of_args++;
+      }
+      for (int i = number_of_args-1; i >= 0; i--) {
+        printf("  pop %s\n", _8byte_arg_regs[i]);
+      }
 
-                        int seq_num = label_seq_num++;
-                        printf("  mov rax, rsp\n");
-                        printf("  and rax, 15\n");
-                        printf("  jnz .L.call.%d\n", seq_num);
-                        printf("  mov rax, 0\n");
-                        printf("  call %s\n", node->funcname);
-                        printf("  jmp .L.end.%d\n", seq_num);
-                        printf(".L.call.%d:\n", seq_num);
-                        printf("  sub rsp, 8\n");
-                        printf("  mov rax, 0\n");
-                        printf("  call %s\n", node->funcname);
-                        printf("  add rsp, 8\n");
-                        printf(".L.end.%d:\n", seq_num);
-                        printf("  push rax\n");
-                        return;
-                      }
+      int seq_num = label_seq_num++;
+      printf("  mov rax, rsp\n");
+      printf("  and rax, 15\n");
+      printf("  jnz .L.call.%d\n", seq_num);
+      printf("  mov rax, 0\n");
+      printf("  call %s\n", node->funcname);
+      printf("  jmp .L.end.%d\n", seq_num);
+      printf(".L.call.%d:\n", seq_num);
+      printf("  sub rsp, 8\n");
+      printf("  mov rax, 0\n");
+      printf("  call %s\n", node->funcname);
+      printf("  add rsp, 8\n");
+      printf(".L.end.%d:\n", seq_num);
+      printf("  push rax\n");
+      return;
+    }
     case ND_ADD_EQ:
     case ND_PTR_ADD_EQ:
     case ND_SUB_EQ:
@@ -502,38 +507,38 @@ static void gen(Node *node) {
     case ND_BITAND_EQ:
     case ND_BITOR_EQ:
     case ND_BITXOR_EQ:
-                      gen_lval(node->lhs);
-                      printf("  push [rsp]\n");
-                      load(node->lhs->type);
-                      gen(node->rhs);
-                      gen_binary(node);
-                      store(node->type);
-                      break;
+      gen_lval(node->lhs);
+      printf("  push [rsp]\n");
+      load(node->lhs->type);
+      gen(node->rhs);
+      gen_binary(node);
+      store(node->type);
+      break;
     case ND_COMMA_OP:
-                      gen(node->lhs);
-                      gen(node->rhs);
-                      return;
+      gen(node->lhs);
+      gen(node->rhs);
+      return;
     case ND_ADDR:
-                      gen_lval(node->lhs);
-                      return;
+      gen_lval(node->lhs);
+      return;
     case ND_DEREF:
-                      // 変数のアドレスをスタックに積む
-                      gen(node->lhs);
+      // 変数のアドレスをスタックに積む
+      gen(node->lhs);
 
-                      if (node->type->kind != ARRAY)
-                        load(node->type);
-                      return;
+      if (node->type->kind != ARRAY)
+        load(node->type);
+      return;
     case ND_RETURN:
-                      if (node->lhs) {
-                        gen(node->lhs);
-                        printf("  pop rax\n");
-                      }
-                      printf("  mov rsp, rbp\n");
-                      printf("  pop rbp\n");
-                      printf("  ret\n");
-                      return;
+      if (node->lhs) {
+        gen(node->lhs);
+        printf("  pop rax\n");
+      }
+      printf("  mov rsp, rbp\n");
+      printf("  pop rbp\n");
+      printf("  ret\n");
+      return;
     case ND_NOP:
-                      return;
+      return;
   }
 
   gen(node->lhs);
