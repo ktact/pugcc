@@ -525,6 +525,23 @@ static GlobalVarInitializer *emit_struct_padding(GlobalVarInitializer *cur, Type
 static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, Type *type) {
   Token *tok = token;
 
+  if (type->kind == ARRAY && type->base->kind == CHAR && token->kind == TK_STR) {
+    token = token->next;
+
+    if (type->is_incomplete) {
+      type->size       = tok->len;
+      type->array_size = tok->len;
+      type->is_incomplete = false;
+    }
+
+    int len = (type->array_size < tok->len) ? type->array_size : tok->len;
+
+    for (int i = 0; i < len; i++)
+      cur = assign_value_to_global_var(cur, 1, tok->str[i]);
+
+    return assign_zero_to_global_var(cur, type->array_size - len);
+  }
+
   if (type->kind == ARRAY) {
     expect("{");
 
