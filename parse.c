@@ -497,6 +497,13 @@ static GlobalVarInitializer *assign_pointer_to_global_var(GlobalVarInitializer *
   return init;
 }
 
+static GlobalVarInitializer *assign_zero_to_global_var(GlobalVarInitializer *cur, int nbytes) {
+  for (int i = 0; i < nbytes; i++)
+    cur = assign_value_to_global_var(cur, 1, 0);
+
+  return cur;
+}
+
 static GlobalVarInitializer *assign_string_to_global_var(char *literal, int len) {
   GlobalVarInitializer head = {};
   GlobalVarInitializer *cur = &head;
@@ -507,9 +514,59 @@ static GlobalVarInitializer *assign_string_to_global_var(char *literal, int len)
   return head.next;
 }
 
+static GlobalVarInitializer *emit_struct_padding(GlobalVarInitializer *cur, Type *parent, Member *member) {
+  int start = member->offset + member->type->size;
+  int end   = member->next ? member->next->offset : parent->size;
+  return assign_zero_to_global_var(cur, end - start);
+}
+
 // global_var_initializer2 = assign
+//                           | "{" (global_var_initializer2 ("," global_var_initializer2)* ","?)? "}"
 static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, Type *type) {
   Token *tok = token;
+
+  if (type->kind == ARRAY) {
+    expect("{");
+
+    int i = 0;
+    if (!peek("}")) {
+      do {
+        cur = global_var_initializer2(cur, type->base);
+        i++;
+      } while (!peek_end() && consume(","));
+    }
+    expect_end();
+
+    if (i < type->array_size)
+      cur = assign_zero_to_global_var(cur, type->base->size * (type->array_size - i));
+
+    if (type->is_incomplete) {
+      type->size = type->base->size * i;
+      type->array_size = i;
+      type->is_incomplete = false;
+    }
+
+    return cur;
+  }
+
+  if (type->kind == STRUCT) {
+    expect("{");
+
+    Member *member = type->members;
+    if (!peek("}")) {
+      do {
+        cur = global_var_initializer2(cur, member->type);
+        cur = emit_struct_padding(cur, type, member);
+        member = member->next;
+      } while (!peek_end() && consume(","));
+    }
+    expect_end();
+
+    if (member)
+      cur = assign_zero_to_global_var(cur, type->size - member->offset);
+    return cur;
+  }
+
   Node *expr = conditional();
 
   if (expr->kind == ND_ADDR) {
