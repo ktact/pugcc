@@ -175,6 +175,7 @@ Function *func_decl();
 Node *stmt();
 Node *stmt2();
 Node *expr();
+static long eval(Node *node);
 long constant_expr();
 Node *assign();
 Node *conditional();
@@ -481,7 +482,57 @@ static bool is_function() {
   return is_function;
 }
 
-// global_var = basetype declarator type_suffix ";"
+static GlobalVarInitializer *assign_value_to_global_var(GlobalVarInitializer *cur, int size, int val) {
+  GlobalVarInitializer *init = calloc(1, sizeof(GlobalVarInitializer));
+  init->size = size;
+  init->val  = val;
+  cur->next = init;
+  return init;
+}
+
+static GlobalVarInitializer *assign_pointer_to_global_var(GlobalVarInitializer *cur, char *another_var_name) {
+  GlobalVarInitializer *init = calloc(1, sizeof(GlobalVarInitializer));
+  init->another_var_name = another_var_name;
+  cur->next = init;
+  return init;
+}
+
+static GlobalVarInitializer *assign_string_to_global_var(char *literal, int len) {
+  GlobalVarInitializer head = {};
+  GlobalVarInitializer *cur = &head;
+
+  for (int i = 0; i < len; i++)
+    cur = assign_value_to_global_var(cur, 1, literal[i]);
+
+  return head.next;
+}
+
+// global_var_initializer2 = assign
+static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, Type *type) {
+  Token *tok = token;
+  Node *expr = conditional();
+
+  if (expr->kind == ND_ADDR) {
+    if (expr->lhs->kind != ND_VAR)
+      error_tok(tok, "不正な初期化式です");
+
+    return assign_pointer_to_global_var(cur, expr->lhs->var->name);
+  }
+
+  if (expr->kind == ND_VAR && expr->var->type->kind == ARRAY) {
+    return assign_pointer_to_global_var(cur, expr->var->name);
+  }
+
+  return assign_value_to_global_var(cur, type->size, eval(expr));
+}
+
+static GlobalVarInitializer *global_var_initializer(Type *type) {
+  GlobalVarInitializer head = {};
+  global_var_initializer2(&head, type);
+  return head.next;
+}
+
+// global-var = basetype declarator type-suffix ("=" global-var-initializer)? ";"
 static void global_var() {
   StorageClass sclass;
   Type *type = basetype(&sclass);
@@ -492,18 +543,23 @@ static void global_var() {
   Token *tok = token;
   type = declarator(type, &name);
   type = type_suffix(type);
-  expect(";");
-
-  if (type->is_incomplete)
-    error_tok(tok, "不完全な型です");
 
   if (sclass == TYPEDEF) {
+    expect(";");
     push_typedef_to_scope(name, type);
   } else {
-    if (type->is_incomplete)
-      error_tok(tok, "不完全な型です");
+    Var *global_var = new_global_var(name, type, /* emit: */true);
 
-    new_global_var(name, type, /* emit: */true);
+    if (!consume("=")) {
+      if (type->is_incomplete)
+        error_tok(tok, "不完全な型です");
+
+      expect(";");
+    } else {
+      // 初期化式がある場合
+      global_var->initializer = global_var_initializer(type);
+      expect(";");
+    }
   }
 }
 
@@ -1435,11 +1491,10 @@ Node *primary() {
     token = token->next;
 
     Type *type = array_of(char_type, literal->len);
-    Var *var = new_global_var(new_label(), type, /* emit: */true);
-    var->contents    = literal->str;
-    var->content_len = literal->len;
+    Var *global_var = new_global_var(new_label(), type, /* emit: */true);
+    global_var->initializer = assign_string_to_global_var(literal->str, literal->len);
 
-    return new_var_node(var, literal);
+    return new_var_node(global_var, literal);
   }
 
   if ((tok = consume("sizeof"))) {

@@ -5,6 +5,7 @@
  */
 int printf();
 int exit();
+int strcmp(char *p, char *q);
 
 int ret3() { return 3; }
 int ret5() { return 5; }
@@ -27,8 +28,16 @@ void ret_none() {
   return;
 }
 
-int g1;
-int g2[4];
+int   g1;
+int   g2[4];
+
+char  g3 = 3;
+short g4 = 4;
+int   g5 = 5;
+long  g6 = 6;
+int  *g7 = &g5;
+char *g8 = "abc";
+
 typedef int MyInt;
 int subtract_char(char a, char b, char c) {
   return a-b-c;
@@ -487,6 +496,13 @@ int main() {
   assert( 4, ({ int  x[]={1,2,3,4}; x[3];      }), "int  x[]={1,2,3,4}; x[3];");
   assert(16, ({ int  x[]={1,2,3,4}; sizeof(x); }), "int  x[]={1,2,3,4}; sizeof(x);");
   assert( 4, ({ char x[]="foo";     sizeof(x); }), "char x[]=\"foo\";   sizeof(x); }");
+
+  assert(3, g3, "g3");
+  assert(4, g4, "g4");
+  assert(5, g5, "g5");
+  assert(6, g6, "g6");
+  assert(5, *g7, "*g7");
+  assert(0, strcmp(g8, "abc"), "strcmp(g8, \"abc\")");
 
   printf("OK\n");
 

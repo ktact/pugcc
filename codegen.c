@@ -549,13 +549,20 @@ static void emit_data(Program *program) {
 
     printf("%s:\n", global_var->name);
 
-    if (!global_var->contents) {
+    if (!global_var->initializer) {
       printf("  .zero %d\n", global_var->type->size);
       continue;
     }
 
-    for (int i = 0; i < global_var->content_len; i++)
-      printf("  .byte %d\n", global_var->contents[i]);
+    for (GlobalVarInitializer *init = global_var->initializer; init; init = init->next) {
+      if (init->another_var_name) {
+        printf("  .quad %s\n", init->another_var_name);
+      } else if (init->size == 1) {
+        printf("  .byte %ld\n", init->val);
+      } else {
+        printf("  .%dbyte %ld\n", init->size, init->val);
+      }
+    }
   }
 }
 

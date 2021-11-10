@@ -31,6 +31,7 @@ Token *token;
 
 typedef struct Type Type;
 typedef struct Member Member;
+typedef struct GlobalVarInitializer GlobalVarInitializer;
 
 // 型を表す型
 struct Type {
@@ -97,6 +98,8 @@ struct Var {
   int content_len;
   bool  is_local;
   int enum_val;
+
+  GlobalVarInitializer *initializer;
 };
 
 typedef struct VarList VarList;
@@ -111,6 +114,17 @@ typedef struct {
   VarList *var_scope;
   TagList *tag_scope;
 } Scope;
+
+struct GlobalVarInitializer {
+  GlobalVarInitializer *next;
+
+  // 定数による初期化の場合に使用
+  int size;
+  long val;
+
+  // 別のグローバル変数へのポインタで初期化する場合に使用
+  char *another_var_name;
+};
 
 // 抽象構文木のノードの種類
 typedef enum {
