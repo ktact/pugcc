@@ -167,27 +167,27 @@ typedef enum {
   ND_SWITCH,        // switch
   ND_CASE,          // case
   ND_BLOCK,         // {...}
-        ND_BREAK,         // break
-        ND_CONTINUE,      // continue
-        ND_GOTO,          // goto
-        ND_LABEL,         // labled statement
-        ND_FUNCCALL,      // function()
-        ND_EXPR_STMT,     // expression statement
-        ND_GNU_STMT_EXPR, // GNU statement expression
-        ND_MEMBER,        // . (struct member access)
-        ND_ADDR,          // &x
-        ND_DEREF,         // *x
-        ND_NOT,           // !
-        ND_BITNOT,        // ~
-        ND_BITAND,        // &
-        ND_BITOR,         // |
-        ND_BITXOR,        // ^
-        ND_SHL,           // <<
-        ND_SHR,           // >>
-        ND_LOGAND,        // &&
-        ND_LOGOR,         // ||
-        ND_RETURN,        // return
-        ND_NOP,           // Empty statement
+  ND_BREAK,         // break
+  ND_CONTINUE,      // continue
+  ND_GOTO,          // goto
+  ND_LABEL,         // labled statement
+  ND_FUNCCALL,      // function()
+  ND_EXPR_STMT,     // expression statement
+  ND_GNU_STMT_EXPR, // GNU statement expression
+  ND_MEMBER,        // . (struct member access)
+  ND_ADDR,          // &x
+  ND_DEREF,         // *x
+  ND_NOT,           // !
+  ND_BITNOT,        // ~
+  ND_BITAND,        // &
+  ND_BITOR,         // |
+  ND_BITXOR,        // ^
+  ND_SHL,           // <<
+  ND_SHR,           // >>
+  ND_LOGAND,        // &&
+  ND_LOGOR,         // ||
+  ND_RETURN,        // return
+  ND_NOP,           // Empty statement
 } NodeKind;
 
 typedef struct Node Node;
