@@ -170,7 +170,9 @@ static void gen_lval(Node *node) {
       break;
     case ND_MEMBER:
       // 左辺値のアドレスをスタックに積む
-      printf("  lea rax, [rbp-%d]\n", node->member->offset);
+      gen_lval(node->lhs);
+      printf("  pop rax\n");
+      printf("  add rax, %d\n", node->member->offset);
       printf("  push rax\n");
       break;
     case ND_DEREF:
@@ -225,8 +227,8 @@ static void gen(Node *node) {
       return;
     case ND_MEMBER:
       gen_lval(node);
-      load(node->type);
-
+      if (node->type->kind != ARRAY)
+        load(node->type);
       return;
     case ND_ASSIGN:
       gen_lval(node->lhs);
