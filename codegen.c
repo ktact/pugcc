@@ -211,7 +211,7 @@ static void gen(Node *node) {
     case ND_VAR:
       gen_lval(node);
 
-      if (node->type->kind != ARRAY && node->var->is_local)
+      if (node->type->kind != ARRAY)
         load(node->type);
 
       return;
