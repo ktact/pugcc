@@ -47,7 +47,7 @@ Type *func_type(Type *return_type) {
 }
 
 bool is_pointer(Node *node) {
-  return node->kind == ND_VAR && node->type->kind == PTR;
+  return (node->type->base != NULL);
 }
 
 bool is_array(Node *node) {
