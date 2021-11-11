@@ -63,6 +63,12 @@ void error_tok(Token *tok, char *fmt, ...) {
   exit(1);
 }
 
+void warn_tok(Token *tok, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  verror_at(tok->str, fmt, ap);
+}
+
 // 次のトークンが期待している記号の場合にはトークンを1つ読み進めて、1つ前のトークンを返す。
 // それ以外の場合にはNULLを返す。
 Token *consume(char *op) {

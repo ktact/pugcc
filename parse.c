@@ -522,6 +522,26 @@ static GlobalVarInitializer *emit_struct_padding(GlobalVarInitializer *cur, Type
   return assign_zero_to_global_var(cur, end - start);
 }
 
+static void skip_excess_element2(void) {
+  for (;;) {
+    if (consume("{"))
+      skip_excess_element2();
+    else
+      assign();
+
+    if (consume_end())
+      return;
+
+    expect(",");
+  }
+}
+
+static void skip_excess_element(void) {
+  expect(",");
+  warn_tok(token, "過剰な要素です");
+  skip_excess_element2();
+}
+
 // global_var_initializer2 = assign
 //                           | "{" (global_var_initializer2 ("," global_var_initializer2)* ","?)? "}"
 static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, Type *type) {
@@ -545,16 +565,19 @@ static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, 
   }
 
   if (type->kind == ARRAY) {
-    expect("{");
+    bool open = consume("{");
 
     int i = 0;
-    if (!peek("}")) {
+    int limit = type->is_incomplete ? INT_MAX : type->array_size;
+    if (open && !peek("}")) {
       do {
         cur = global_var_initializer2(cur, type->base);
         i++;
-      } while (!peek_end() && consume(","));
+      } while (i < limit && !peek_end() && consume(","));
     }
-    expect_end();
+
+    if (open && !consume_end())
+      skip_excess_element();
 
     if (i < type->array_size)
       cur = assign_zero_to_global_var(cur, type->base->size * (type->array_size - i));
@@ -569,7 +592,7 @@ static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, 
   }
 
   if (type->kind == STRUCT) {
-    expect("{");
+    bool open = consume("{");
 
     Member *member = type->members;
     if (!peek("}")) {
@@ -577,9 +600,11 @@ static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, 
         cur = global_var_initializer2(cur, member->type);
         cur = emit_struct_padding(cur, type, member);
         member = member->next;
-      } while (!peek_end() && consume(","));
+      } while (member && !peek_end() && consume(","));
     }
-    expect_end();
+
+    if (open && !consume_end())
+      skip_excess_element();
 
     if (member)
       cur = assign_zero_to_global_var(cur, type->size - member->offset);
@@ -714,17 +739,19 @@ static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg)
   if (type->kind == ARRAY) {
     Var *array = var;
 
-    expect("{");
+    bool open = consume("{");
 
     int i = 0;
+    int limit = type->is_incomplete ? INT_MAX : type->array_size;
     if (!peek("}")) {
       do {
         Designator next_elem_desg = { desg, i++ };
         cur = initializer_list(cur, array, type->base, &next_elem_desg);
-      } while (!peek_end() && consume(","));
+      } while (i < limit && !peek_end() && consume(","));
     }
 
-    expect_end();
+    if (open && !consume_end())
+      skip_excess_element();
 
     while (i < type->array_size) {
       Designator next_elem_desg = { desg, i++ };
@@ -745,17 +772,18 @@ static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg)
   if (type->kind == STRUCT) {
     Member *member = type->members;
 
-    expect("{");
+    bool open = consume("{");
 
     if (!peek("}")) {
       do {
         Designator next_elem_desg = { desg, 0, member };
         cur = initializer_list(cur, var, member->type, &next_elem_desg);
         member = member->next;
-      } while (!peek_end() && consume(","));
+      } while (member && !peek_end() && consume(","));
     }
 
-    expect_end();
+    if (open && !consume_end())
+      skip_excess_element();
 
     for (; member; member = member->next) {
       Designator next_elem_desg = { desg, 0, member };
