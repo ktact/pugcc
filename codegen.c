@@ -557,6 +557,7 @@ static void emit_data(Program *program) {
 
     if (global_var->initializer) continue;
 
+    printf(".align %d\n", global_var->type->align);
     printf("%s:\n", global_var->name);
     printf("  .zero %d\n", global_var->type->size);
   }
@@ -568,6 +569,7 @@ static void emit_data(Program *program) {
 
     if (!global_var->initializer) continue;
 
+    printf(".align %d\n", global_var->type->align);
     printf("%s:\n", global_var->name);
 
     for (GlobalVarInitializer *init = global_var->initializer; init; init = init->next) {
