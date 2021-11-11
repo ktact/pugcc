@@ -160,6 +160,7 @@ static char *new_label() {
 typedef enum {
   TYPEDEF = 1 << 0,
   STATIC  = 1 << 1,
+  EXTERN  = 1 << 2,
 } StorageClass;
 
 static bool is_type();
@@ -205,7 +206,7 @@ static Type *basetype(StorageClass *sclass) {
   Type *type = int_type;
   bool non_builtin_type_already_appeared = false;
   while (is_type()) {
-    if (peek("typedef") || peek("static")) {
+    if (peek("typedef") || peek("static") || peek("extern")) {
       if (!sclass)
         error_tok(token, "記憶クラス指定子は許可されていません");
 
@@ -213,10 +214,12 @@ static Type *basetype(StorageClass *sclass) {
         *sclass |= TYPEDEF;
       } else if (consume("static")) {
         *sclass |= STATIC;
+      } else if (consume("extern")) {
+        *sclass |= EXTERN;
       }
 
       if (*sclass & (*sclass - 1))
-        error_tok(token, "typedefとstaticは同時に指定できません");
+        error_tok(token, "typedef、static、externは同時に指定できません");
     } else if (consume("void")) {
       type = void_type;
     } else if (consume("_Bool")) {
@@ -458,7 +461,7 @@ static Type *enum_specifier() {
 }
 
 static bool is_type() {
-  return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("enum") || peek("struct") || peek("typedef") || peek("static") || find_typedef(token));
+  return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("enum") || peek("struct") || peek("typedef") || peek("static") || peek("extern") || find_typedef(token));
 }
 
 static bool is_function() {
@@ -647,7 +650,12 @@ static void global_var() {
     return;
   }
 
-  Var *global_var = new_global_var(name, type, /* emit: */true);
+  Var *global_var = new_global_var(name, type, /* emit: */sclass != EXTERN);
+
+  if (sclass == EXTERN) {
+    expect(";");
+    return;
+  }
 
   if (consume("=")) {
     global_var->initializer = global_var_initializer(type);
