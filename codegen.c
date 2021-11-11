@@ -550,16 +550,25 @@ static void gen(Node *node) {
 }
 
 static void emit_data(Program *program) {
+  // 未初期化のグローバル変数はbssセクションに配置する
+  printf(".bss\n");
+  for (VarList *vl = program->global_variables; vl; vl = vl->next) {
+    Var *global_var = vl->var;
+
+    if (global_var->initializer) continue;
+
+    printf("%s:\n", global_var->name);
+    printf("  .zero %d\n", global_var->type->size);
+  }
+
+  // 初期化されているグローバル変数はdataセクションに配置する
   printf(".data\n");
   for (VarList *vl = program->global_variables; vl; vl = vl->next) {
     Var *global_var = vl->var;
 
-    printf("%s:\n", global_var->name);
+    if (!global_var->initializer) continue;
 
-    if (!global_var->initializer) {
-      printf("  .zero %d\n", global_var->type->size);
-      continue;
-    }
+    printf("%s:\n", global_var->name);
 
     for (GlobalVarInitializer *init = global_var->initializer; init; init = init->next) {
       if (init->another_var_name) {
