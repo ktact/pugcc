@@ -563,7 +563,7 @@ static void emit_data(Program *program) {
 
     for (GlobalVarInitializer *init = global_var->initializer; init; init = init->next) {
       if (init->another_var_name) {
-        printf("  .quad %s\n", init->another_var_name);
+        printf("  .quad %s+%ld\n", init->another_var_name, init->addend);
       } else if (init->size == 1) {
         printf("  .byte %ld\n", init->val);
       } else {

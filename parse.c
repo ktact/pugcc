@@ -176,6 +176,7 @@ Node *stmt();
 Node *stmt2();
 Node *expr();
 static long eval(Node *node);
+static long eval2(Node *node, Var **var);
 long constant_expr();
 Node *assign();
 Node *conditional();
@@ -490,9 +491,10 @@ static GlobalVarInitializer *assign_value_to_global_var(GlobalVarInitializer *cu
   return init;
 }
 
-static GlobalVarInitializer *assign_pointer_to_global_var(GlobalVarInitializer *cur, char *another_var_name) {
+static GlobalVarInitializer *assign_pointer_to_global_var(GlobalVarInitializer *cur, char *another_var_name, long addend) {
   GlobalVarInitializer *init = calloc(1, sizeof(GlobalVarInitializer));
   init->another_var_name = another_var_name;
+  init->addend = addend;
   cur->next = init;
   return init;
 }
@@ -586,18 +588,14 @@ static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, 
 
   Node *expr = conditional();
 
-  if (expr->kind == ND_ADDR) {
-    if (expr->lhs->kind != ND_VAR)
-      error_tok(tok, "不正な初期化式です");
-
-    return assign_pointer_to_global_var(cur, expr->lhs->var->name);
+  Var *var = NULL;
+  long addend = eval2(expr, &var);
+  if (var) {
+    int scale = (var->type->kind == ARRAY) ? var->type->base->size : var->type->size;
+    return assign_pointer_to_global_var(cur, var->name, addend * scale);
   }
 
-  if (expr->kind == ND_VAR && expr->var->type->kind == ARRAY) {
-    return assign_pointer_to_global_var(cur, expr->var->name);
-  }
-
-  return assign_value_to_global_var(cur, type->size, eval(expr));
+  return assign_value_to_global_var(cur, type->size, addend);
 }
 
 static GlobalVarInitializer *global_var_initializer(Type *type) {
@@ -621,20 +619,21 @@ static void global_var() {
   if (sclass == TYPEDEF) {
     expect(";");
     push_typedef_to_scope(name, type);
-  } else {
-    Var *global_var = new_global_var(name, type, /* emit: */true);
-
-    if (!consume("=")) {
-      if (type->is_incomplete)
-        error_tok(tok, "不完全な型です");
-
-      expect(";");
-    } else {
-      // 初期化式がある場合
-      global_var->initializer = global_var_initializer(type);
-      expect(";");
-    }
+    return;
   }
+
+  Var *global_var = new_global_var(name, type, /* emit: */true);
+
+  if (consume("=")) {
+    global_var->initializer = global_var_initializer(type);
+    expect(";");
+    return;
+  }
+
+  if (type->is_incomplete)
+    error_tok(tok, "不完全な型です");
+
+  expect(";");
 }
 
 typedef struct Designator Designator;
@@ -1143,11 +1142,21 @@ Node *expr() {
 }
 
 static long eval(Node *node) {
+  return eval2(node, NULL);
+}
+
+static long eval2(Node *node, Var **var) {
   switch (node->kind) {
     case ND_ADD:
       return eval(node->lhs) + eval(node->rhs);
+    case ND_PTR_ADD:
+      return eval2(node->lhs, var) + eval(node->rhs);
     case ND_SUB:
       return eval(node->lhs) - eval(node->rhs);
+    case ND_PTR_SUB:
+      return eval2(node->lhs, var) - eval(node->rhs);
+    case ND_PTR_DIFF:
+      return eval2(node->lhs, var) - eval2(node->rhs, var);
     case ND_MUL:
       return eval(node->lhs) * eval(node->rhs);
     case ND_DIV:
@@ -1184,6 +1193,16 @@ static long eval(Node *node) {
       return eval(node->lhs) || eval(node->rhs);
     case ND_NUM:
       return node->val;
+    case ND_ADDR:
+      if (!var || *var || node->lhs->kind != ND_VAR)
+        error_tok(node->token, "不正な初期化式です");
+      *var = node->lhs->var;
+      return 0;
+    case ND_VAR:
+      if (!var || *var || node->var->type->kind != ARRAY)
+        error_tok(node->token, "不正な初期化式です");
+      *var = node->var;
+      return 0;
   }
 }
 
@@ -1361,6 +1380,7 @@ Node *add() {
     if ((tok = consume("+"))) {
       Node *lhd = node;
       Node *rhd = mul();
+      add_type(lhd); add_type(rhd);
       if (is_pointer(lhd) || is_pointer(rhd) || is_array(lhd) || is_array(rhd)) {
         node = new_binary(ND_PTR_ADD, lhd, rhd, tok);
       } else {
@@ -1369,6 +1389,7 @@ Node *add() {
     } else if ((tok = consume("-"))) {
       Node *lhd = node;
       Node *rhd = mul();
+      add_type(lhd); add_type(rhd);
       if (is_pointer(lhd) && is_pointer(rhd) || is_array(lhd) || is_array(rhd)) {
         node = new_binary(ND_PTR_DIFF, lhd, rhd, tok);
       } else if (is_pointer(lhd) || is_pointer(rhd)) {

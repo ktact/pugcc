@@ -124,6 +124,8 @@ struct GlobalVarInitializer {
 
   // 別のグローバル変数へのポインタで初期化する場合に使用
   char *another_var_name;
+
+  long addend;
 };
 
 // 抽象構文木のノードの種類
