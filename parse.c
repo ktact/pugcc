@@ -3,8 +3,8 @@
 static VarList *locals  = NULL;
 static VarList *globals = NULL;
 
-static VarList *var_scope = NULL;
-static TagList *tag_scope = NULL;
+static VarScope *var_scope = NULL;
+static TagScope *tag_scope = NULL;
 
 static Node *current_switch;
 
@@ -18,6 +18,15 @@ static Scope *enter_scope(void) {
 static void leave_scope(Scope *sc) {
   var_scope = sc->var_scope;
   tag_scope = sc->tag_scope;
+}
+
+static VarScope *push_scope(char *name) {
+  VarScope *sc = calloc(1, sizeof(VarScope));
+  sc->name  = name;
+  sc->len   = strlen(name);
+  sc->next  = var_scope;
+  var_scope = sc;
+  return sc;
 }
 
 Node *new_node(NodeKind kind, Token *token) {
@@ -52,17 +61,12 @@ static Var *new_var(char *name, Type *type, bool is_local) {
   var->len      = strlen(name);
   var->type     = type;
   var->is_local = is_local;
-
-  VarList *sc = calloc(1, sizeof(VarList));
-  sc->var = var;
-  sc->next = var_scope;
-  var_scope = sc;
-
   return var;
 }
 
 static Var *new_local_var(char *name, Type *type) {
   Var *var = new_var(name, type, true);
+  push_scope(name)->var = var;
 
   VarList *vl = calloc(1, sizeof(VarList));
   vl->var = var;
@@ -76,6 +80,7 @@ static Var *new_local_var(char *name, Type *type) {
 
 static Var *new_global_var(char *name, Type *type, bool emit) {
   Var *var = new_var(name, type, false);
+  push_scope(name)->var = var;
 
   if (emit) {
     VarList *vl = calloc(1, sizeof(VarList));
@@ -92,11 +97,9 @@ static Var *push_typedef_to_scope(char *type_name, Type *base_type) {
   self_defined_type->name     = type_name;
   self_defined_type->len      = strlen(type_name);
 
-  VarList *sc = calloc(1, sizeof(VarList));
-  sc->var = self_defined_type;
+  VarScope *sc = push_scope(type_name);
+  sc->var      = self_defined_type;
   sc->type_def = base_type;
-  sc->next = var_scope;
-  var_scope = sc;
 
   return self_defined_type;
 }
@@ -108,36 +111,31 @@ static Var *push_enum_field_to_scope(char *field_name, Type *type, int val) {
   field->type     = type;
   field->enum_val = val;
 
-  VarList *sc = calloc(1, sizeof(VarList));
-  sc->var = field;
-  sc->next = var_scope;
-  var_scope = sc;
+  push_scope(field_name)->var = field;
 
   return field;
 }
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
-static Var *find_var(Token *tok) {
-  for (VarList *vl = var_scope; vl; vl = vl->next) {
-    Var *var = vl->var;
-    if (var->len == tok->len && !memcmp(tok->str, var->name, tok->len)) {
-      return var;
+static VarScope *find_var(Token *tok) {
+  for (VarScope *sc = var_scope; sc; sc = sc->next) {
+    if (sc->len == tok->len && !memcmp(tok->str, sc->name, tok->len)) {
+      return sc;
     }
   }
   return NULL;
 }
 
 static Type *find_typedef(Token *tok) {
-  for (VarList *vl = var_scope; vl; vl = vl->next) {
-    Var *var = vl->var;
-    if (var->len == tok->len && !memcmp(tok->str, var->name, tok->len))
-      return vl->type_def;
+  for (VarScope *sc = var_scope; sc; sc = sc->next) {
+    if (sc->len == tok->len && !memcmp(tok->str, sc->name, tok->len))
+      return sc->type_def;
   }
   return NULL;
 }
 
-static TagList *find_tag_by(Token *tok) {
-  for (TagList *tag = tag_scope; tag; tag = tag->next)
+static TagScope *find_tag_by(Token *tok) {
+  for (TagScope *tag = tag_scope; tag; tag = tag->next)
     if (tag->len == tok->len && !memcmp(tok->str, tag->name, tok->len))
       return tag;
   return NULL;
@@ -318,7 +316,7 @@ static Type *type_name() {
 }
 
 static void push_tag_to_scope(Token *tok, Type *type) {
-  TagList *tag = calloc(1, sizeof(TagList));
+  TagScope *tag = calloc(1, sizeof(TagScope));
   tag->next = tag_scope;
   tag->name = strndup(tok->str, tok->len);
   tag->len  = tok->len;
@@ -334,7 +332,7 @@ static Type *struct_decl() {
   // 構造体名を読む
   Token *tag_name = consume_ident();
   if (tag_name && !peek("{")) {
-    TagList *tag = find_tag_by(tag_name);
+    TagScope *tag = find_tag_by(tag_name);
 
     if (!tag) {
       Type *type = struct_type();
@@ -430,7 +428,7 @@ static Type *enum_specifier() {
 
   Token *tag_name = consume_ident();
   if (tag_name && !peek("{")) {
-    TagList *scope = find_tag_by(tag_name);
+    TagScope *scope = find_tag_by(tag_name);
     if (!scope)
       error_tok(tag_name, "未定義のenumです");
     if (scope->type->kind != ENUM)
@@ -1585,11 +1583,11 @@ Node *primary() {
       node->args     = funcargs();
       add_type(node);
 
-      Var *var = find_var(tok);
-      if (var) {
-        if (var->type->kind != FUNC)
+      VarScope *sc = find_var(tok);
+      if (sc && sc->var) {
+        if (sc->var->type->kind != FUNC)
           fprintf(stderr, "%sは関数ではありません。\n", ident);
-        node->type = var->type->return_type;
+        node->type = sc->var->type->return_type;
       } else {
         fprintf(stderr, "%s: 関数の暗黙的な宣言です。\n", ident);
         node->type = int_type;
@@ -1600,14 +1598,14 @@ Node *primary() {
       Node *node = new_node(ND_VAR, tok);
 
       // 変数 or 列挙定数
-      Var *var = find_var(tok);
-      if (var) {
-        if (var->type->kind == ENUM) {
-          node = new_num_node(var->enum_val, tok);
+      VarScope *sc = find_var(tok);
+      if (sc && sc->var) {
+        if (sc->var->type->kind == ENUM) {
+          node = new_num_node(sc->var->enum_val, tok);
         } else {
-          node->type   = var->type;
-          node->offset = var->offset;
-          node->var    = var;
+          node->type   = sc->var->type;
+          node->offset = sc->var->offset;
+          node->var    = sc->var;
         }
       } else {
         error_at(ident, "未定義の変数を参照しています");

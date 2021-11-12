@@ -47,14 +47,6 @@ struct Type {
   bool is_incomplete;
 };
 
-typedef struct TagList TagList;
-struct TagList {
-  TagList *next;
-  char *name;
-  int len;
-  Type *type;
-};
-
 // 構造体のメンバを表す型
 struct Member {
   char *name;
@@ -104,16 +96,34 @@ struct Var {
 };
 
 typedef struct VarList VarList;
-
 struct VarList {
   Var *var;
   VarList *next;
   Type *type_def;
 };
 
+typedef struct VarScope VarScope;
+struct VarScope {
+  char *name;
+  int len;
+  Var *var;
+  Type *type_def;
+
+  VarScope *next;
+};
+
+typedef struct TagScope TagScope;
+struct TagScope {
+  char *name;
+  int len;
+  Type *type;
+
+  TagScope *next;
+};
+
 typedef struct {
-  VarList *var_scope;
-  TagList *tag_scope;
+  VarScope *var_scope;
+  TagScope *tag_scope;
 } Scope;
 
 struct GlobalVarInitializer {
