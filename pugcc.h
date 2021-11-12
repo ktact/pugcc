@@ -92,6 +92,8 @@ struct Var {
   bool  is_local;
   int enum_val;
 
+  // for global variable
+  bool is_static;
   GlobalVarInitializer *initializer;
 };
 

@@ -58,6 +58,7 @@ int  *g27     = g26 + 1;
 
 extern int ext1;
 extern int *ext2;
+static int ext3 = 3;
 
 typedef int MyInt;
 int subtract_char(char a, char b, char c) {
@@ -584,6 +585,8 @@ int main() {
 
   ext2 = &ext1;
   assert(5, *ext2, "*ext2");
+
+  assert(3, ext3, "ext3");
 
   assert(2, counter(), "counter()");
   assert(4, counter(), "counter()");

@@ -78,8 +78,9 @@ static Var *new_local_var(char *name, Type *type) {
   return var;
 }
 
-static Var *new_global_var(char *name, Type *type, bool emit) {
+static Var *new_global_var(char *name, Type *type, bool is_static, bool emit) {
   Var *var = new_var(name, type, false);
+  var->is_static = is_static;
   push_scope(name)->var = var;
 
   if (emit) {
@@ -648,7 +649,7 @@ static void global_var() {
     return;
   }
 
-  Var *global_var = new_global_var(name, type, /* emit: */sclass != EXTERN);
+  Var *global_var = new_global_var(name, type, sclass == STATIC, /* emit: */sclass != EXTERN);
 
   if (sclass == EXTERN) {
     expect(";");
@@ -844,7 +845,7 @@ static Node *declaration() {
   }
 
   if (sclass == STATIC) {
-    Var *static_local_var = new_global_var(new_label(), type, /* emit */true);
+    Var *static_local_var = new_global_var(new_label(), type, /* is_static */true, /* emit */true);
     push_scope(name)->var = static_local_var;
 
     if (consume("="))
@@ -947,7 +948,7 @@ Function *func_decl() {
   char *func_name = NULL;
   type = declarator(type, &func_name);
 
-  new_global_var(func_name, func_type(type), false);
+  new_global_var(func_name, func_type(type), sclass == STATIC, false);
 
   Function *f = calloc(1, sizeof(Function));
   f->name = func_name;
@@ -1634,7 +1635,7 @@ Node *primary() {
     token = token->next;
 
     Type *type = array_of(char_type, literal->len);
-    Var *global_var = new_global_var(new_label(), type, /* emit: */true);
+    Var *global_var = new_global_var(new_label(), type, /* static */true, /* emit: */true);
     global_var->initializer = assign_string_to_global_var(literal->str, literal->len);
 
     return new_var_node(global_var, literal);

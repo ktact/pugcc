@@ -550,6 +550,10 @@ static void gen(Node *node) {
 }
 
 static void emit_data(Program *program) {
+  for (VarList *vl = program->global_variables; vl; vl = vl->next)
+    if (!vl->var->is_static)
+      printf(".global %s\n", vl->var->name);
+
   // 未初期化のグローバル変数はbssセクションに配置する
   printf(".bss\n");
   for (VarList *vl = program->global_variables; vl; vl = vl->next) {
