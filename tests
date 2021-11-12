@@ -67,6 +67,11 @@ int *g1_ptr() {
   return &g1;
 }
 void voidfn(void) {}
+int counter() {
+  static int i;
+  static int j = 1+1;
+  return i++ + j++;
+}
 int param_decay(int x[]) { return x[0]; }
 int;
 struct { char a; int b;};
@@ -579,6 +584,10 @@ int main() {
 
   ext2 = &ext1;
   assert(5, *ext2, "*ext2");
+
+  assert(2, counter(), "counter()");
+  assert(4, counter(), "counter()");
+  assert(6, counter(), "counter()");
 
   printf("OK\n");
 

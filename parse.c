@@ -843,7 +843,21 @@ static Node *declaration() {
     exit(1);
   }
 
+  if (sclass == STATIC) {
+    Var *static_local_var = new_global_var(new_label(), type, /* emit */true);
+    push_scope(name)->var = static_local_var;
+
+    if (consume("="))
+      static_local_var->initializer = global_var_initializer(type);
+    else if (type->is_incomplete)
+      error_tok(tok, "不完全な型です");
+    
+    consume(";");
+    return new_node(ND_NOP, tok);
+  }
+
   Var *var = new_local_var(name, type);
+
 
   if (consume(";")) {
     if (type->is_incomplete)
@@ -1228,7 +1242,7 @@ static long eval2(Node *node, Var **var) {
     case ND_NUM:
       return node->val;
     case ND_ADDR:
-      if (!var || *var || node->lhs->kind != ND_VAR)
+      if (!var || *var || node->lhs->kind != ND_VAR || node->lhs->var->is_local)
         error_tok(node->token, "不正な初期化式です");
       *var = node->lhs->var;
       return 0;
