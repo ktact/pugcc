@@ -164,6 +164,8 @@ typedef enum {
 
 static bool is_type();
 static Type *basetype(StorageClass *sclass);
+static Type *type_qualifier_list(Type *type);
+static Type *pointers(Type *type);
 static Type *declarator(Type *type, char **name);
 static Type *abstract_declarator(Type *type);
 static Type *type_suffix(Type *type);
@@ -197,7 +199,7 @@ Node *postfix();
 Node *primary();
 Node *funcargs();
 
-// basetype = builtin_type | struct_decl | typedef-name
+// basetype = (builtin_type | struct_decl | typedef-name | type_qualifier)+
 // builtin_type = "void" | "_Bool" | "char" | "short" | "int" | "long"
 static Type *basetype(StorageClass *sclass) {
   if (sclass) *sclass = 0;
@@ -239,6 +241,8 @@ static Type *basetype(StorageClass *sclass) {
       if (non_builtin_type_already_appeared) break;
       type = enum_specifier();
       non_builtin_type_already_appeared = true;
+    } else if (consume("const")) {
+      type->is_const = true;
     } else {
       if (non_builtin_type_already_appeared) break;
       Token *type_name = consume_ident();
@@ -251,10 +255,29 @@ static Type *basetype(StorageClass *sclass) {
   return type;
 }
 
-// declarator = "*" ("(" declarator ")" | ident) type_suffix
-static Type *declarator(Type *type, char **name) {
-  while (consume("*"))
+// type-qualifier-list = ("const" | "volatile" | "restrict")*
+static Type *type_qualifier_list(Type *type) {
+  if (consume("const")) {
+    type->is_const = true;
+  }
+
+  return type;
+}
+
+static Type *pointers(Type *type) {
+  while (consume("*")) {
     type = pointer_to(type);
+
+    if (consume("const"))
+      type->is_const = true;
+  }
+
+  return type;
+}
+
+// declarator = "*"* ("(" declarator ")" | ident) type_suffix
+static Type *declarator(Type *type, char **name) {
+  type = pointers(type);
 
   if (consume("(")) {
     Type *placeholder = calloc(1, sizeof(Type));
@@ -268,10 +291,9 @@ static Type *declarator(Type *type, char **name) {
   return type_suffix(type);
 }
 
-// abstract_declarator = "*" ("(" abstract_declarator ")")? type_suffix
+// abstract_declarator = "*"* ("(" abstract_declarator ")")? type_suffix
 static Type *abstract_declarator(Type *type) {
-  while (consume("*"))
-    type = pointer_to(type);
+  type = pointers(type);
 
   if (consume("(")) {
     Type *placeholder = calloc(1, sizeof(Type));
@@ -460,7 +482,7 @@ static Type *enum_specifier() {
 }
 
 static bool is_type() {
-  return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("enum") || peek("struct") || peek("typedef") || peek("static") || peek("extern") || find_typedef(token));
+  return (peek("void") || peek("_Bool") || peek("char") || peek("short") || peek("int") || peek("long") || peek("enum") || peek("struct") || peek("typedef") || peek("static") || peek("extern") || find_typedef(token) || peek("const") || peek("volatile"));
 }
 
 static bool is_function() {
@@ -1265,8 +1287,11 @@ Node *assign() {
   Node *node = conditional();
 
   Token *tok;
-  if ((tok = consume("=")))
+  if ((tok = consume("="))) {
+    if (node->var && node->var->type->is_const)
+      error_tok(tok, "読み取り専用変数への代入です");
     return new_binary(ND_ASSIGN, node, assign(), tok);
+  }
 
   if ((tok = consume("*=")))
     return new_binary(ND_MUL_EQ, node, assign(), tok);

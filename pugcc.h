@@ -45,6 +45,7 @@ struct Type {
   Type *base;
   Type *return_type;
   bool is_incomplete;
+  bool is_const;
 };
 
 // 構造体のメンバを表す型
