@@ -3,17 +3,27 @@ SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
 pugcc: $(OBJS)
-	$(CC) -o pugcc $(OBJS) $(LDFLAGS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
 $(OBJS): pugcc.h
 
-test: pugcc
+pugcc-gen2: pugcc $(SRCS) pugcc.h
+	./self.sh
+
+extern.o: extern-tests
+	gcc -xc -c -o extern.o extern-tests
+
+test: pugcc extern.o
 	./pugcc tests > tmp.s
-	echo 'int ext1; int *ext2; int char_fn() { return 257; } int static_fn() { return 5; }' | gcc -xc -c -o tmp2.o -
-	gcc -static -g -o tmp tmp.s tmp2.o
+	gcc -static -g -o tmp tmp.s extern.o
+	./tmp
+
+test-gen2: pugcc-gen2 extern.o
+	./pugcc-gen2 tests > tmp.s
+	gcc -static -g -o tmp tmp.s extern.o
 	./tmp
 
 clean:
-	rm -f pugcc *.o *.~ tmp*
+	rm -fr pugcc pugcc-gen* *.o *.~ tmp*
 
 .PHONY: test clean
