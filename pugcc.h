@@ -109,6 +109,8 @@ typedef struct VarScope VarScope;
 struct VarScope {
   char *name;
   int len;
+  int depth;
+
   Var *var;
   Type *type_def;
 
@@ -119,6 +121,8 @@ typedef struct TagScope TagScope;
 struct TagScope {
   char *name;
   int len;
+  int depth;
+
   Type *type;
 
   TagScope *next;

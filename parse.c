@@ -5,6 +5,7 @@ static VarList *globals = NULL;
 
 static VarScope *var_scope = NULL;
 static TagScope *tag_scope = NULL;
+static int scope_depth;
 
 static Node *current_switch;
 
@@ -12,18 +13,21 @@ static Scope *enter_scope(void) {
   Scope *sc = calloc(1, sizeof(Scope));
   sc->var_scope = var_scope;
   sc->tag_scope = tag_scope;
+  scope_depth++;
   return sc;
 }
 
 static void leave_scope(Scope *sc) {
   var_scope = sc->var_scope;
   tag_scope = sc->tag_scope;
+  scope_depth--;
 }
 
 static VarScope *push_scope(char *name) {
   VarScope *sc = calloc(1, sizeof(VarScope));
   sc->name  = name;
   sc->len   = strlen(name);
+  sc->depth = scope_depth;
   sc->next  = var_scope;
   var_scope = sc;
   return sc;
@@ -196,6 +200,7 @@ Node *cast();
 Node *unary();
 Node *gnu_stmt_expr(Token *tok);
 Node *postfix();
+Node *compound_literal();
 Node *primary();
 Node *funcargs();
 
@@ -343,6 +348,7 @@ static void push_tag_to_scope(Token *tok, Type *type) {
   tag->next = tag_scope;
   tag->name = strndup(tok->str, tok->len);
   tag->len  = tok->len;
+  tag->depth = scope_depth;
   tag->type = type;
   tag_scope = tag;
 }
@@ -371,6 +377,23 @@ static Type *struct_decl() {
 
   expect("{");
 
+  TagScope *sc = NULL;
+  if (tag_name)
+    sc = find_tag_by(tag_name);
+
+  Type *type;
+  if (sc && sc->depth == scope_depth) {
+    type = sc->type;
+  } else {
+    type = struct_type();
+
+    /* 下記のように再帰的な構造体を扱うことためにタグを登録しておく
+     * "struct T { struct T *next; }"
+     */
+    if (tag_name)
+      push_tag_to_scope(tag_name, type);
+  }
+
   Member head = {};
   Member *cur = &head;
 
@@ -379,8 +402,6 @@ static Type *struct_decl() {
     cur = cur->next;
   }
 
-  Type *type = calloc(1, sizeof(Type));
-  type->kind = STRUCT;
   type->members = head.next;
 
   int offset = 0;
@@ -436,6 +457,8 @@ static Node *struct_ref(Node *lhs) {
   Token *tok = token; // for error message
 
   Member *member = find_member(lhs->type, expect_ident());
+  if (!member)
+    error_tok(tok, "そのようなメンバはありません");
 
   Node *node = new_unary(ND_MEMBER, lhs, tok);
   node->member = member;
@@ -635,7 +658,10 @@ static GlobalVarInitializer *global_var_initializer2(GlobalVarInitializer *cur, 
     return cur;
   }
 
+  bool open = consume("{");
   Node *expr = conditional();
+  if (open)
+    expect_end();
 
   Var *var = NULL;
   long addend = eval2(expr, &var);
@@ -821,7 +847,11 @@ static Node *initializer_list(Node *cur, Var *var, Type *type, Designator *desg)
     return cur;
   }
 
+  bool open = consume("{");
   cur->next = assign_expr(var, desg, assign());
+  if (open)
+    expect_end();
+
   return cur->next;
 }
 
@@ -1498,10 +1528,13 @@ Node *cast() {
     if (is_type()) {
       Type *type = type_name();
       expect(")");
-      Node *node = new_unary(ND_CAST, cast(), tok);
-      add_type(node->lhs);
-      node->type = type;
-      return node;
+
+      if (!consume("{")) {
+        Node *node = new_unary(ND_CAST, cast(), tok);
+        add_type(node->lhs);
+        node->type = type;
+        return node;
+      }
     }
     token = tok;
   }
@@ -1550,11 +1583,15 @@ Node *gnu_stmt_expr(Token *tok) {
   return node;
 }
 
-// postfix = primary ("[" expr "]" | "." ident | "->" ident | "++" | "--")*
+// postfix = compound-literal
+//           | primary ("[" expr "]" | "." ident | "->" ident | "++" | "--")*
 Node *postfix() {
   Token *tok;
 
-  Node *node = primary();
+  Node *node = compound_literal();
+  if (node) return node;
+
+  node = primary();
 
   for (;;) {
     if ((tok = consume("["))) {
@@ -1591,6 +1628,35 @@ Node *postfix() {
 
     return node;
   }
+}
+
+// compound-literal = "(" type_name ")" "{" (global_var_initializer | initializer) "}"
+Node *compound_literal() {
+  Token *tok = token;
+
+  if (!consume("(") || !is_type()) {
+    token = tok;
+    return NULL;
+  }
+
+  Type *type = type_name();
+  expect(")");
+
+  if (!peek("{")) {
+    token = tok;
+    return NULL;
+  }
+
+  if (scope_depth == 0) {
+    Var *global_var = new_global_var(new_label(), type, false, /* emit */true);
+    global_var->initializer = global_var_initializer(type);
+    return new_var_node(global_var, tok);
+  }
+
+  Var *local_var = new_local_var(new_label(), type);
+  Node *node = new_var_node(local_var, tok);
+  node->init = initializer(local_var, tok);
+  return node;
 }
 
 // primary = num

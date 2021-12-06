@@ -166,7 +166,10 @@ static void gen_lval(Node *node) {
   switch (node->kind) {
     case ND_VAR:
       // 左辺値のアドレスをスタックに積む
-      gen_addr(node->var);
+      if (node->init)
+        gen(node->init);
+
+        gen_addr(node->var);
       break;
     case ND_MEMBER:
       // 左辺値のアドレスをスタックに積む
@@ -211,6 +214,9 @@ static void gen(Node *node) {
       }
       return;
     case ND_VAR:
+      if (node->init)
+        gen(node->init);
+
       gen_lval(node);
 
       if (node->type->kind != ARRAY)
