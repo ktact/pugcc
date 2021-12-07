@@ -47,5 +47,6 @@ for i in $TMP/*.c; do
 done
 
 expand main.c
+expand type.c
 
 gcc -static -o pugcc-gen2 $TMP/*.o

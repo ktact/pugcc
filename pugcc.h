@@ -28,7 +28,7 @@ struct Token {
 };
 
 // 現在着目しているトークン
-Token *token;
+extern Token *token;
 
 typedef struct Type Type;
 typedef struct Member Member;
@@ -267,10 +267,10 @@ struct Program {
 };
 
 // 入力ファイル名
-char *filename;
+extern char *filename;
 
 // 入力プログラム
-char *user_input;
+extern char *user_input;
 
 // パース関数の宣言
 Program *program();
