@@ -109,18 +109,6 @@ static Var *push_typedef_to_scope(char *type_name, Type *base_type) {
   return self_defined_type;
 }
 
-static Var *push_enum_field_to_scope(char *field_name, Type *type, int val) {
-  Var *field = calloc(1, sizeof(Var));
-  field->name     = field_name;
-  field->len      = strlen(field_name);
-  field->type     = type;
-  field->enum_val = val;
-
-  push_scope(field_name)->var = field;
-
-  return field;
-}
-
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 static VarScope *find_var(Token *tok) {
   for (VarScope *sc = var_scope; sc; sc = sc->next) {
@@ -490,7 +478,7 @@ static Type *enum_specifier() {
     if (consume("="))
       count = constant_expr();
 
-    push_enum_field_to_scope(name, type, count++);
+    push_scope(name)->enum_val = count++;
 
     if (consume_end()) break;
 
@@ -1700,24 +1688,23 @@ Node *primary() {
       }
       return node;
     } else {
-      // 変数参照
-      Node *node = new_node(ND_VAR, tok);
-
-      // 変数 or 列挙定数
+      // 変数 or 列挙定数参照
       VarScope *sc = find_var(tok);
-      if (sc && sc->var) {
-        if (sc->var->type->kind == ENUM) {
-          node = new_num_node(sc->var->enum_val, tok);
-        } else {
+      if (sc) {
+        if (sc->var) {
+          Node *node = new_node(ND_VAR, tok);
+
           node->type   = sc->var->type;
           node->offset = sc->var->offset;
           node->var    = sc->var;
+
+          return node;
         }
-      } else {
-        error_at(ident, "未定義の変数を参照しています");
+
+        return new_num_node(sc->enum_val, tok);
       }
-      add_type(node);
-      return node;
+
+      error_at(ident, "未定義の変数を参照しています");
     }
   }
 

@@ -114,6 +114,8 @@ struct VarScope {
   Var *var;
   Type *type_def;
 
+  int enum_val;
+
   VarScope *next;
 };
 
