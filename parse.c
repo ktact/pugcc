@@ -399,7 +399,7 @@ static Type *struct_decl() {
 
     offset = align_to(offset, member->type->align);
     member->offset = offset;
-    offset += member->type->size;
+    offset = offset + member->type->size;
 
     if (type->align < member->type->align)
       type->align = member->type->align;
@@ -1021,7 +1021,7 @@ Function *func_decl() {
   for (VarList *vl = locals; vl; vl = vl->next) {
     Var *var = vl->var;
     offset = align_to(offset, var->type->align);
-    offset += var->type->size;
+    offset = offset + var->type->size;
     var->offset = offset;
   }
 
@@ -1306,8 +1306,6 @@ Node *assign() {
 
   Token *tok;
   if ((tok = consume("="))) {
-    if (node->var && node->var->type->is_const)
-      error_tok(tok, "読み取り専用変数への代入です");
     return new_binary(ND_ASSIGN, node, assign(), tok);
   }
 

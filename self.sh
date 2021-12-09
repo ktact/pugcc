@@ -21,6 +21,16 @@ int feof(FILE *stream);
 static void assert() {}
 int strcmp(char *s1, char *s2);
 typedef int size_t;
+
+int printf(char *fmt, ...);
+int sprintf(char *buf, char *fmt, ...);
+long strlen(char *p);
+int strncmp(char *p, char *q);
+void *memcpy(char *dst, char *src, long n);
+char *strndup(char *p, long n);
+int isspace(int c);
+char *strstr(char *haystack, char *needle);
+long strtol(char *nptr, char **endptr, int base);
 EOF
 
   # ヘッダファイル挿入
@@ -34,6 +44,7 @@ EOF
   sed -i 's/\btrue\b/1/g; s/\bfalse\b/0/g;' $TMP/$1
   sed -i 's/\bNULL\b/0/g' $TMP/$1
   sed -i 's/, \.\.\.//g' $TMP/$1
+  sed -i 's/INT_MAX/2147483647/g' $TMP/$1
 
   # 狭義のコンパイル実行
   ./pugcc $TMP/$1 > $TMP/${1%.c}.s
@@ -48,5 +59,7 @@ done
 
 expand main.c
 expand type.c
+expand codegen.c
+expand parse.c
 
 gcc -static -o pugcc-gen2 $TMP/*.o
