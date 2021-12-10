@@ -958,25 +958,30 @@ static VarList *read_func_param() {
   return vl;
 }
 
-static VarList *read_func_params() {
+static void read_func_params(Function *f) {
   if (consume(")"))
-    return NULL;
+    return;
 
   Token *tok = token;
   if (consume("void") && consume(")"))
-    return NULL;
+    return;
   token = tok;
 
-  VarList *head = read_func_param();
-  VarList *cur = head;
+  f->params = read_func_param();
+  VarList *cur = f->params;
 
   while (!consume(")")) {
     expect(",");
+
+    if (consume("...")) {
+      f->has_variadic_arguments = true;
+      expect(")");
+      return;
+    }
+
     cur->next = read_func_param();
     cur = cur->next;
   }
-
-  return head;
 }
 
 // func_decl = basetype declarator "(" params? ")" ("{" stmt* "}" | ";")
@@ -998,7 +1003,7 @@ Function *func_decl() {
   expect("(");
 
   Scope *sc = enter_scope();
-  f->params = read_func_params();
+  read_func_params(f);
 
   if (consume(";")) {
     leave_scope(sc);
@@ -1017,7 +1022,7 @@ Function *func_decl() {
 
   f->body = head.next;
 
-  int offset = 0;
+  int offset = f->has_variadic_arguments ? 56 : 0;
   for (VarList *vl = locals; vl; vl = vl->next) {
     Var *var = vl->var;
     offset = align_to(offset, var->type->align);

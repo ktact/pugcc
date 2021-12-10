@@ -607,9 +607,26 @@ static void emit_text(Program *program) {
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", f->stack_size);
 
+    // 関数が可変長引数をとる場合、レジスタ経由で引数が渡されるため、関数呼び出し前にレジスタを退避する
+    if (f->has_variadic_arguments) {
+      int n = 0;
+      for (VarList *vl = f->params; vl; vl = vl->next)
+        n++;
+
+      printf("mov dword ptr [rbp-8], %d\n", n * 8);
+      printf("mov [rbp-16], r9\n");
+      printf("mov [rbp-24], r8\n");
+      printf("mov [rbp-32], rcx\n");
+      printf("mov [rbp-40], rdx\n");
+      printf("mov [rbp-48], rsi\n");
+      printf("mov [rbp-56], rdi\n");
+    }
+
     int i = 0;
     for (VarList *vl = f->params; vl; vl = vl->next) {
       Var *param = vl->var;
+
+      // TODO: 引数が7個以上ある場合は、引数をスタックから取得する
 
       if (param->type->size == 1) {
         printf("  mov [rbp-%d], %s\n", param->offset, _1byte_arg_regs[i++]);

@@ -176,7 +176,7 @@ static char *starts_with_reserved_word(char *p) {
       return keywords[i];
   }
 
-  char *operators[] = { "<<=", ">>=", "==", "!=", "<=", ">=", "++", "--", "&&", "||", "&=", "|=", "^=", "+=", "-=", "*=", "/=", "<<", ">>", "->" };
+  char *operators[] = { "<<=", ">>=", "==", "!=", "<=", ">=", "++", "--", "&&", "||", "&=", "|=", "^=", "+=", "-=", "*=", "/=", "<<", ">>", "->", "..." };
   for (int i = 0; i < sizeof(operators) / sizeof(*operators); i++) {
     if (startswith(p, operators[i]))
       return operators[i];

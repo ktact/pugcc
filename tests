@@ -102,6 +102,9 @@ int assert(long expected, long actual, char *code) {
   }
 }
 
+int add_all1(int x, ...);
+int add_all3(int z, int b, int c, ...);
+
 int main() {
   assert( 0,           0,             "0");
   assert(42,          42,            "42");
@@ -625,6 +628,12 @@ int main() {
   assert(2, tree->lhs->val, "tree->lhs->val");
   assert(3, tree->lhs->lhs->val, "tree->lhs->lhs->val");
   assert(4, tree->lhs->rhs->val, "tree->lhs->rhs->val");
+
+  assert(6, add_all1(1,2,3,0), "add_all1(1,2,3,0)");
+  assert(5, add_all1(1,2,3,-1,0), "add_all1(1,2,3,-1,0)");
+
+  assert(6, add_all3(1,2,3,0), "add_all3(1,2,3,0)");
+  assert(5, add_all3(1,2,3,-1,0), "add_all3(1,2,3,-1,0)");
 
   printf("OK\n");
 

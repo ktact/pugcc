@@ -258,6 +258,7 @@ struct Function {
   Function *next;
   int stack_size;
   bool is_static;
+  bool has_variadic_arguments;
 };
 
 typedef struct Program Program;
