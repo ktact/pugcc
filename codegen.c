@@ -511,6 +511,10 @@ static void gen(Node *node) {
       printf("  call %s\n", node->funcname);
       printf("  add rsp, 8\n");
       printf(".L.end.%d:\n", seq_num);
+      if (node->type->kind == BOOL) {
+        // boolを返す場合にはx86-64の規約に従い上位56ビットを0クリアする
+        printf("  movzb rax, al\n");
+      }
       printf("  push rax\n");
       return;
     }
