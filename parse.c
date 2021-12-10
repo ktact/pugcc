@@ -1685,6 +1685,8 @@ Node *primary() {
         if (sc->var->type->kind != FUNC)
           fprintf(stderr, "%sは関数ではありません。\n", ident);
         node->type = sc->var->type->return_type;
+      } else if (!strcmp(node->funcname, "__builtin_va_start")) {
+        node->type = void_type;
       } else {
         fprintf(stderr, "%s: 関数の暗黙的な宣言です。\n", ident);
         node->type = int_type;

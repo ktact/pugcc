@@ -479,6 +479,16 @@ static void gen(Node *node) {
       gen(node->lhs);
       return;
     case ND_FUNCCALL: {
+      if (!strcmp(node->funcname, "__builtin_va_start")) {
+        printf("  pop rax\n");
+        printf("  mov edi, dword ptr [rbp-8]\n");
+        printf("  mov dword ptr [rax],      0\n");
+        printf("  mov dword ptr [rax+4],    0\n");
+        printf("  mov qword ptr [rax+8],  rdi\n");
+        printf("  mov qword ptr [rax+16],   0\n");
+        return;
+      }
+
       int number_of_args = 0;
       for (Node *arg = node->args; arg; arg = arg->next) {
         gen(arg);
