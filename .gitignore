@@ -3,7 +3,7 @@
 tmp*
 a.out
 pugcc
-pugcc-gen
+pugcc-gen2
 .*
 peda*
 tags
