@@ -7,7 +7,7 @@ pugcc: $(OBJS)
 
 $(OBJS): pugcc.h
 
-pugcc-gen2: pugcc $(SRCS) pugcc.h
+pugcc-gen2: pugcc $(SRCS) pugcc.h self.sh
 	./self.sh
 
 extern.o: extern-tests
