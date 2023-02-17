@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
   filename = argv[1];
   user_input = read_file(filename);
   token = tokenize();
+  token = preprocess(token);
   Program *prog = program();
 
   codegen(prog);

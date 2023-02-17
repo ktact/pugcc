@@ -306,3 +306,6 @@ extern void error(char *fmt, ...);
 
 // 型関連の関数の宣言
 int align_to(int n, int align);
+
+// プリプロセッサ向け関数の宣言
+extern Token *preprocess(Token *token);
