@@ -18,9 +18,19 @@ test: pugcc extern.o
 	gcc -static -g -o tmp tmp.s extern.o
 	./tmp
 
-test-gen2: pugcc-gen2 extern.o
+test/macro: pugcc test/macro.c
+	./pugcc test/macro.c > tmp.s
+	gcc -static -g -o tmp tmp.s
+	./tmp
+
+test/gen2: pugcc-gen2 extern.o
 	./pugcc-gen2 tests > tmp.s
 	gcc -static -g -o tmp tmp.s extern.o
+	./tmp
+
+test/macro/gen2: pugcc pugcc-gen2 test/macro.c
+	./pugcc-gen2 test/macro.c > tmp.s
+	gcc -static -g -o tmp tmp.s
 	./tmp
 
 clean:

@@ -3,6 +3,7 @@
 char *filename;
 char *user_input;
 Token *token;
+bool at_beginning_of_line;
 
 // 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
@@ -10,7 +11,11 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   tok->kind = kind;
   tok->str  = str;
   tok->len  = len;
+  tok->at_beginning_of_line = at_beginning_of_line;
+  at_beginning_of_line = false;
+
   cur->next = tok;
+
   return tok;
 }
 
@@ -256,8 +261,15 @@ Token *tokenize() {
   head.next = NULL;
   Token *cur = &head;
 
+  at_beginning_of_line = true;
   while (*p) {
-    // 空白文字をスキップ
+    if (*p == '\n') {
+      p++;
+      at_beginning_of_line = true;
+      continue;
+    }
+
+   // 空白文字をスキップ
     if (isspace(*p)) {
       p++;
       continue;
@@ -348,6 +360,12 @@ Token *tokenize() {
 
     if (strchr("+-*/&(){}<>=;,[].!~^|:?", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
+      continue;
+    }
+
+    if (strchr("#", *p)) {
+      cur = new_token(TK_RESERVED, cur, p++, 1);
+      cur->at_beginning_of_line = true;
       continue;
     }
 

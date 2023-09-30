@@ -25,6 +25,7 @@ struct Token {
   int val;        // kindがTK_NUMの場合、その整数値
   char *str;      // トークン文字列
   int len;        // トークンの長さ
+  bool at_beginning_of_line;
 };
 
 // 現在着目しているトークン
