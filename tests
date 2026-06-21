@@ -186,6 +186,10 @@ int main() {
   assert(2, ({ int *p=array; int *q; p=p+3; q=p-2;  *q; }), "int *p=array; int *q; p=p+3; q=p-2;  *q;");
   assert(1, ({ int *p=array; int *q; p=p+3; q=p-3;  *q; }), "int *p=array; int *q; p=p+3; q=p-3;  *q;");
 
+  // char*同士のポインタ差分はバイト数を返す (ND_PTR_DIFFがchar*で正しく動作するか)
+  assert(3, ({ char a[4]; char *p=a; char *q=a+3; q-p; }), "char a[4]; char *p=a; char *q=a+3; q-p;");
+  assert(1, ({ char a[4]; char *p=a; char *q=a+1; q-p; }), "char a[4]; char *p=a; char *q=a+1; q-p;");
+
   assert(4, ({ int x;  sizeof(x); }),   "int x;  sizeof(x);");
   assert(8, ({ int *x; sizeof(x); }),   "int *x; sizeof(x);");
   assert(4, ({ int x;  sizeof(x+3); }), "int x;  sizeof(x+3);");
@@ -483,6 +487,14 @@ int main() {
   assert(6, ({ int i=3; i*=2; }), "int i=3; i*=2;");
   assert(3, ({ int i=6; i/=2; i; }), "int i=6; i/=2; i;");
   assert(3, ({ int i=6; i/=2; }), "int i=6; i/=2;");
+
+  // int*への複合代入 (ND_PTR_ADD_EQ / ND_PTR_SUB_EQ)
+  assert(4, ({ int *p=array; p+=2; *p; }), "int *p=array; p+=2; *p;");
+  assert(4, ({ int *p=array; p+=3; p-=1; *p; }), "int *p=array; p+=3; p-=1; *p;");
+  // char*への複合代入 (1バイト単位でポインタが進むか)
+  assert(99, ({ char a[3]; a[0]=97; a[1]=98; a[2]=99; char *p=a; p+=2; *p; }), "char a[3]; char *p=a; p+=2; *p;");
+  // ポインタ複合代入の式値が二重評価されないか (break→returnバグの検出)
+  assert(0, ({ int *p=array; int *q=array+2; (p+=2)-q; }), "(p+=2)-q==0");
 
   assert(1, 1<<0, "1<<0");
   assert(8, 1<<3, "1<<3");
