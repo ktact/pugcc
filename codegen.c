@@ -73,33 +73,35 @@ static void gen_binary(Node *node) {
 
   switch (node->kind) {
     case ND_ADD:
+    case ND_ADD_EQ:
       printf("  add rax, rdi\n");
       break;
     case ND_SUB:
+    case ND_SUB_EQ:
       printf("  sub rax, rdi\n");
       break;
     case ND_PTR_ADD:
+    case ND_PTR_ADD_EQ:
       printf("  imul rdi, %d\n", node->lhs->type->base->size);
       printf("  add rax, rdi\n");
       break;
     case ND_PTR_SUB:
+    case ND_PTR_SUB_EQ:
       printf("  imul rdi, %d\n", node->lhs->type->base->size);
       printf("  sub rax, rdi\n");
       break;
     case ND_PTR_DIFF:
-      // アドレスの値を引いた後にそのポインタが指す変数の型のバイト数で割る
       printf("  sub rax, rdi\n");
       printf("  cqo\n");
-      if (is_array(node->lhs))
-        printf("  imul rdi, %d\n", node->lhs->type->base->size);
-      else
-        printf("  mov rdi, 4\n");
+      printf("  mov rdi, %d\n", node->lhs->type->base->size);
       printf("  idiv rdi\n");
       break;
     case ND_MUL:
+    case ND_MUL_EQ:
       printf("  imul rax, rdi\n");
       break;
     case ND_DIV:
+    case ND_DIV_EQ:
       printf("  cqo\n");
       printf("  idiv rdi\n");
       break;
@@ -535,7 +537,7 @@ static void gen(Node *node) {
       gen(node->rhs);
       gen_binary(node);
       store(node->type);
-      break;
+      return;
     case ND_COMMA_OP:
       gen(node->lhs);
       gen(node->rhs);

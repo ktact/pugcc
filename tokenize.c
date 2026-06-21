@@ -210,10 +210,10 @@ static Token *read_int_literal(Token *cur, char *start) {
 
   int base;
   if (!strncasecmp(p, "0x", 2) && is_alnum(p[2])) {
-    p = p + 2;
+    p += 2;
     base = 16;
   } else if (!strncasecmp(p, "0b", 2) && is_alnum(p[2])) {
-    p = p + 2;
+    p += 2;
     base = 2;
   } else if (*p == '0') {
     base = 8;
@@ -225,7 +225,7 @@ static Token *read_int_literal(Token *cur, char *start) {
   if (is_alnum(*p))
     error_at(p, "不正な数値です");
 
-  Token *tok = new_token(TK_NUM, cur, start, (long)p - (long)start);
+  Token *tok = new_token(TK_NUM, cur, start, p - start);
   tok->val = val;
 
   return tok;
@@ -248,7 +248,7 @@ static Token *read_char_literal(Token *cur, char *start) {
     error_at(start, "文字リテラルが長すぎます。\n");
   p++;
 
-  Token *tok = new_token(TK_NUM, cur, start, (long)p - (long)start);
+  Token *tok = new_token(TK_NUM, cur, start, p - start);
   tok->val = c;
 
   return tok;
@@ -277,7 +277,7 @@ Token *tokenize() {
 
     // 行コメントをスキップ
     if (strncmp(p, "//", 2) == 0) {
-      p = p + 2;
+      p += 2;
       while (*p != '\n')
         p++;
       continue;
@@ -295,7 +295,7 @@ Token *tokenize() {
     // 文字リテラル
     if (*p == '\'') {
       cur = read_char_literal(cur, p);
-      p = p + cur->len;
+      p += cur->len;
       continue;
     }
 
@@ -344,17 +344,16 @@ Token *tokenize() {
     if (keywords) {
       int len = strlen(keywords);
       cur = new_token(TK_RESERVED, cur, p, len);
-      p = p + len;
+      p += len;
       continue;
     }
 
     // 識別子
     if (is_alpha(*p)) {
-      char *q = p;
-      p = p + 1;
+      char *q = p++;
       while (is_alnum(*p))
-        p = p + 1;
-      cur = new_token(TK_IDENT, cur, q, (long)p - (long)q);
+        p++;
+      cur = new_token(TK_IDENT, cur, q, p - q);
       continue;
     }
 
@@ -371,7 +370,7 @@ Token *tokenize() {
 
     if (isdigit(*p)) {
       cur = read_int_literal(cur, p);
-      p = p + cur->len;
+      p += cur->len;
       continue;
     }
 
