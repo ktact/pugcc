@@ -18,6 +18,7 @@ typedef enum {
 } TokenKind;
 
 typedef struct Token Token;
+typedef struct Hideset Hideset;
 
 struct Token {
   TokenKind kind; // トークンの型
@@ -26,6 +27,7 @@ struct Token {
   char *str;      // トークン文字列
   int len;        // トークンの長さ
   bool at_beginning_of_line;
+  Hideset *hideset;
 };
 
 // 現在着目しているトークン
@@ -310,3 +312,16 @@ int align_to(int n, int align);
 
 // プリプロセッサ向け関数の宣言
 extern Token *preprocess(Token *token);
+
+struct Hideset {
+  Hideset *next;
+  char *name;
+};
+
+typedef struct Macro Macro;
+struct Macro {
+  char *name;
+  int len;
+  Token *repl;
+  Macro *next;
+};

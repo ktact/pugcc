@@ -8,6 +8,11 @@ int exit();
 int strcmp(char *p, char *q);
 int memcmp(char *p, char *q);
 
+#define NULL 0
+#define TRUE 1
+#define FIVE 5
+#define VAL  1
+
 int ret3() { return 3; }
 int ret5() { return 5; }
 int add(int x, int y) { return x + y; }
@@ -652,6 +657,10 @@ int main() {
 
   assert(1, true_fn(), "true_fn()");
   assert(0, false_fn(), "false_fn()");
+
+  assert(0, ({ int x = NULL; x; }), "int x = NULL; x;");
+  assert(1, ({ int x = TRUE; x; }), "int x = TRUE; x;");
+  assert(5, ({ int x = FIVE; x; }), "int x = FIVE; x;");
 
   printf("OK\n");
 
