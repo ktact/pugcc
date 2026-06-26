@@ -12,6 +12,8 @@ int memcmp(char *p, char *q);
 #define TRUE 1
 #define FIVE 5
 #define VAL  1
+#undef VAL
+#define VAL  2
 
 int ret3() { return 3; }
 int ret5() { return 5; }
@@ -661,6 +663,9 @@ int main() {
   assert(0, ({ int x = NULL; x; }), "int x = NULL; x;");
   assert(1, ({ int x = TRUE; x; }), "int x = TRUE; x;");
   assert(5, ({ int x = FIVE; x; }), "int x = FIVE; x;");
+
+  // #unref
+  assert(2, ({ int x = VAL; x; }), "int x = VAL; x;");
 
   printf("OK\n");
 

@@ -323,5 +323,6 @@ struct Macro {
   char *name;
   int len;
   Token *repl;
+  bool deleted;
   Macro *next;
 };

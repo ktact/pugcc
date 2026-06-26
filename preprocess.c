@@ -38,7 +38,7 @@ static Macro *macros;
 // 見つからなければ NULL を返す。
 static Macro *find_macro(Token *token) {
   for (Macro *m = macros; m; m = m->next)
-    if (m->len == token->len && memcmp(m->name, token->str, token->len) == 0)
+    if (!m->deleted && m->len == token->len && memcmp(m->name, token->str, token->len) == 0)
       return m;
 
   return NULL;
@@ -57,6 +57,16 @@ static void add_macro(Token *name, Token *repl) {
   m->repl = repl;
   m->next = macros;
   macros  = m;
+}
+
+// 削除済みフラグを立てたマクロをMacroリストの先頭に登録することで同名のマクロを削除する
+static void del_macro(Token *name) {
+  Macro *m = calloc(1, sizeof(Macro));
+  m->name    = name->str;
+  m->len     = name->len;
+  m->deleted = true;
+  m->next    = macros;
+  macros     = m;
 }
 
 // Hideset を線形探索して名前 s（長さ len）が含まれるか返す。
@@ -210,6 +220,9 @@ static bool expand_macro(Token **rest, Token *token) {
 //          # -> define -> NAME -> repl... -> [次行]
 //               ^^^^^^^^ token はここから処理
 //
+//     #undef NAME
+//       -> del_macroでマクロを無効化（deleted=trueなエントリを先頭に追加）
+//
 //     それ以外 -> エラー
 Token *preprocess(Token *token) {
   Token head = {};
@@ -238,6 +251,16 @@ Token *preprocess(Token *token) {
       token = token->next;
       Token *repl = copy_line(&token, token);
       add_macro(name, repl);
+      continue;
+    }
+
+    // #undef
+    if (token->len == 5 && memcmp(token->str, "undef", 5) == 0) {
+      token = token->next;
+      Token *name = token;
+      while (!token->at_beginning_of_line && token->kind != TK_EOF)
+        token = token->next;
+      del_macro(name);
       continue;
     }
 
