@@ -199,6 +199,131 @@ static bool expand_macro(Token **rest, Token *token) {
   return true;
 }
 
+// ConditionalInclusion スタック（cond_incl が先頭）
+//
+//   #ifdef / #ifndef / #if を処理するたびに先頭に push し、
+//   #endif で pop する。
+//
+//     #ifdef A      → push(IN_IF,  included=true)
+//       #ifdef B    → push(IN_IF,  included=true)
+//       #endif      → pop
+//     #else         → context=IN_ELSE, included=false → skip_until_endif
+//     #endif        → pop
+//
+//   cond_incl: [B(IN_IF)] -> [A(IN_IF)] -> NULL
+//              ^^^先頭が最も内側の条件ブロック
+static ConditionalInclusion *cond_incl;
+
+// ConditionalInclusion を生成してスタック先頭に push する。
+// included: このブランチのトークンを出力するか否か
+static ConditionalInclusion *push_cond_incl(Token *token, bool included) {
+  ConditionalInclusion *ci = calloc(1, sizeof(ConditionalInclusion));
+  ci->next     = cond_incl;
+  ci->context  = IN_IF;
+  ci->included = included;
+  cond_incl    = ci;
+  return ci;
+}
+
+// 条件コンパイルディレクティブのキーワード判定ヘルパー群。
+// プリプロセッサディレクティブの '#' の直後のトークンに対して使用する。
+static bool token_is_else(Token *token) {
+  return (token->len == 4 && memcmp(token->str, "else", 4) == 0);
+}
+
+static bool token_is_elif(Token *token) {
+  return (token->len == 4 && memcmp(token->str, "elif", 4) == 0);
+}
+
+static bool token_is_endif(Token *token) {
+  return (token->len == 5 && memcmp(token->str, "endif", 5) == 0);
+}
+
+static bool token_is_ifdef(Token *token) {
+  return (token->len == 5 && memcmp(token->str, "ifdef", 5) == 0);
+}
+
+static bool token_is_ifndef(Token *token) {
+  return (token->len == 6 && memcmp(token->str, "ifndef", 6) == 0);
+}
+
+static bool token_is_if(Token *token) {
+  return (token->len == 2 && memcmp(token->str, "if", 2) == 0);
+}
+
+// included=false のブランチを読み飛ばし、対応する #else/#elif/#endif の
+// ディレクティブ名トークンを返す。ネストした #if 系ディレクティブを
+// depth で追跡し、対応する深さの境界でのみ停止する。
+//
+//   例: #ifdef A が false の場合
+//
+//     #ifdef A          ← このブロックの中身を読み飛ばす
+//       #ifdef B        depth=1
+//       #endif          depth=0
+//     #else  <──────── ここで停止、"else" トークンを返す
+//     ...
+//     #endif
+static Token *skip_until_else_or_endif(Token *token) {
+  int depth = 0;
+  while (token->kind != TK_EOF) {
+    if (line_starts_with_hash(token)) {
+      // '#'の次のトークンに着目する
+      token = token->next;
+
+      if (depth == 0) {
+        if (token_is_else(token)) return token;
+        if (token_is_elif(token)) return token;
+        if (token_is_endif(token)) return token;
+      }
+
+      if (token_is_ifdef(token) || token_is_ifndef(token) || token_is_if(token))
+        depth++;
+
+      if (token_is_endif(token))
+        depth--;
+    }
+
+    token = token->next;
+  }
+
+  error_tok(token, "#endifがありません");
+  return token;
+}
+
+// included=false の #else ブランチを読み飛ばし、対応する #endif の
+// ディレクティブ名トークンを返す。
+// skip_until_else_or_endif と異なり #else/#elif では停止しない。
+//
+//   例: #ifdef A が true で #else ブランチを読み飛ばす場合
+//
+//     #else             ← ここから呼ばれる
+//       #ifdef B        depth=1
+//       #endif          depth=0
+//     #endif  <──────── ここで停止、"endif" トークンを返す
+static Token *skip_until_endif(Token *token) {
+  int depth = 0;
+  while (token->kind != TK_EOF) {
+    if (line_starts_with_hash(token)) {
+      // '#'の次のトークンに着目する
+      token = token->next;
+
+      if (token_is_ifdef(token) || token_is_ifndef(token) || token_is_if(token))
+        depth++;
+
+      if (token_is_endif(token)) {
+        if (depth == 0) return token;
+
+        depth--;
+      }
+    }
+
+    token = token->next;
+  }
+
+  error_tok(token, "#endifがありません");
+  return token;
+}
+
 // トークン列を走査してプリプロセッサを処理する。
 //
 //   [マクロ展開]
@@ -222,6 +347,17 @@ static bool expand_macro(Token **rest, Token *token) {
 //
 //     #undef NAME
 //       -> del_macroでマクロを無効化（deleted=trueなエントリを先頭に追加）
+//
+//     #ifdef NAME / #ifndef NAME
+//       -> push_cond_incl で ConditionalInclusion をスタックに積む
+//          included=false なら skip_until_else_or_endif でブランチをスキップ
+//
+//     #else
+//       -> included=false だった場合: included=true にして出力再開
+//          included=true  だった場合: skip_until_endif でブランチをスキップ
+//
+//     #endif
+//       -> cond_incl をポップ
 //
 //     それ以外 -> エラー
 Token *preprocess(Token *token) {
@@ -261,6 +397,63 @@ Token *preprocess(Token *token) {
       while (!token->at_beginning_of_line && token->kind != TK_EOF)
         token = token->next;
       del_macro(name);
+      continue;
+    }
+
+    // #ifdef
+    if (token_is_ifdef(token)) {
+      token = token->next;
+
+      ConditionalInclusion *ci = push_cond_incl(token, find_macro(token) != NULL);
+      while (!token->at_beginning_of_line && token->kind != TK_EOF)
+        token = token->next;
+
+      if (ci->included)
+        continue;
+
+      token = skip_until_else_or_endif(token);
+    }
+
+    // #ifndef
+    if (token_is_ifndef(token)) {
+      token = token->next;
+
+      ConditionalInclusion *ci = push_cond_incl(token, find_macro(token) == NULL);
+      while (!token->at_beginning_of_line && token->kind != TK_EOF)
+        token = token->next;
+
+      if (ci->included)
+        continue;
+
+      token = skip_until_else_or_endif(token);
+    }
+
+    // #else
+    if (token_is_else(token)) {
+      if (!cond_incl || cond_incl->context == IN_ELSE)
+        error_tok(token, "対応する'#if'がありません");
+
+      while (!token->at_beginning_of_line && token->kind != TK_EOF)
+        token = token->next;
+
+      cond_incl->context = IN_ELSE;
+      if (!cond_incl->included) {
+        cond_incl->included = true;
+        continue;
+      }
+
+      token = skip_until_endif(token);
+    }
+
+    // #endif
+    if (token_is_endif(token)) {
+      if (!cond_incl)
+        error_tok(token, "対応する'#if'がありません");
+
+      while (!token->at_beginning_of_line && token->kind != TK_EOF)
+        token = token->next;
+
+      cond_incl = cond_incl->next;
       continue;
     }
 

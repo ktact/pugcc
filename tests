@@ -15,6 +15,30 @@ int memcmp(char *p, char *q);
 #undef VAL
 #define VAL  2
 
+#ifdef NULL
+int ifdef_defined = 1;
+#else
+int ifdef_defined = 0;
+#endif
+
+#ifdef UNDEFINED_MACRO
+int ifdef_undefined = 1;
+#else
+int ifdef_undefined = 0;
+#endif
+
+#ifndef UNDEFINED_MACRO
+int ifndef_undefined = 1;
+#else
+int ifndef_undefined = 0;
+#endif
+
+#ifndef NULL
+int ifndef_defined = 1;
+#else
+int ifndef_defined = 0;
+#endif
+
 int ret3() { return 3; }
 int ret5() { return 5; }
 int add(int x, int y) { return x + y; }
@@ -664,8 +688,14 @@ int main() {
   assert(1, ({ int x = TRUE; x; }), "int x = TRUE; x;");
   assert(5, ({ int x = FIVE; x; }), "int x = FIVE; x;");
 
-  // #unref
+  // #undef
   assert(2, ({ int x = VAL; x; }), "int x = VAL; x;");
+
+  // #ifdef / #ifndef
+  assert(1, ifdef_defined,    "#ifdef defined");
+  assert(0, ifdef_undefined,  "#ifdef undefined");
+  assert(1, ifndef_undefined, "#ifndef undefined");
+  assert(0, ifndef_defined,   "#ifndef defined");
 
   printf("OK\n");
 

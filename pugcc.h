@@ -326,3 +326,10 @@ struct Macro {
   bool deleted;
   Macro *next;
 };
+
+typedef struct ConditionalInclusion ConditionalInclusion;
+struct ConditionalInclusion {
+  ConditionalInclusion *next;
+  enum { IN_IF, IN_ELIF, IN_ELSE } context;
+  bool included;
+};
